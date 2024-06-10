@@ -751,7 +751,7 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
                     torch.nn.utils.remove_weight_norm(self.enc_q)
         return self
 
-    # @torch.jit.ignore
+    @torch.jit.ignore
     def forward(
         self,
         phone: torch.Tensor,
@@ -776,7 +776,7 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
         o = self.dec(z_slice, pitchf, g=g)
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
-    # @torch.jit.export
+    @torch.jit.export
     def infer(
         self,
         phone: torch.Tensor,
@@ -920,7 +920,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
                     torch.nn.utils.remove_weight_norm(self.enc_q)
         return self
 
-    # @torch.jit.ignore
+    @torch.jit.ignore
     def forward(
         self, phone, phone_lengths, pitch, pitchf, y, y_lengths, ds
     ):  # 这里ds是id，[bs,1]
@@ -938,7 +938,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         o = self.dec(z_slice, pitchf, g=g)
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
-    # @torch.jit.export
+    @torch.jit.export
     def infer(
         self,
         phone: torch.Tensor,
@@ -1079,7 +1079,7 @@ class SynthesizerTrnMs256NSFsid_nono(nn.Module):
                     torch.nn.utils.remove_weight_norm(self.enc_q)
         return self
 
-    # @torch.jit.ignore
+    @torch.jit.ignore
     def forward(self, phone, phone_lengths, y, y_lengths, ds):  # 这里ds是id，[bs,1]
         g = self.emb_g(ds).unsqueeze(-1)  # [b, 256, 1]##1是t，广播的
         m_p, logs_p, x_mask = self.enc_p(phone, None, phone_lengths)
@@ -1091,7 +1091,7 @@ class SynthesizerTrnMs256NSFsid_nono(nn.Module):
         o = self.dec(z_slice, g=g)
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
-    # @torch.jit.export
+    @torch.jit.export
     def infer(
         self,
         phone: torch.Tensor,
@@ -1228,7 +1228,7 @@ class SynthesizerTrnMs768NSFsid_nono(nn.Module):
                     torch.nn.utils.remove_weight_norm(self.enc_q)
         return self
 
-    # @torch.jit.ignore
+    @torch.jit.ignore
     def forward(self, phone, phone_lengths, y, y_lengths, ds):  # 这里ds是id，[bs,1]
         g = self.emb_g(ds).unsqueeze(-1)  # [b, 256, 1]##1是t，广播的
         m_p, logs_p, x_mask = self.enc_p(phone, None, phone_lengths)
@@ -1240,7 +1240,7 @@ class SynthesizerTrnMs768NSFsid_nono(nn.Module):
         o = self.dec(z_slice, g=g)
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
-    # @torch.jit.export
+    @torch.jit.export
     def infer(
         self,
         phone: torch.Tensor,

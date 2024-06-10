@@ -11,6 +11,10 @@ VoiceChangerType: TypeAlias = Literal[
 
 STORED_SETTING_FILE = "stored_setting.json"
 ASSETS_FILE = 'assets.json'
+# TODO: Need JIT cache invalidation strategy
+JIT_DIR = '.jit'
+
+os.makedirs(JIT_DIR, exist_ok=True)
 
 SERVER_DEVICE_SAMPLE_RATES = [16000, 32000, 44100, 48000, 96000, 192000]
 

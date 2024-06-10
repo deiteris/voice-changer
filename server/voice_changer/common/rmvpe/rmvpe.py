@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 import torch.nn as nn
@@ -7,7 +8,7 @@ import numpy as np
 from safetensors import safe_open
 from voice_changer.common.SafetensorsUtils import load_model
 from librosa.filters import mel
-
+from const import JIT_DIR
 from mods.log_control import VoiceChangaerLogger
 
 logger = VoiceChangaerLogger.get_instance().getLogger()
@@ -335,14 +336,31 @@ class RMVPE:
         if device is None:
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        model = E2E(4, 1, (2, 2))
-        if '.safetensors' in model_path:
-            with safe_open(model_path, 'pt', device=str(device) if device.type == 'cuda' else 'cpu') as cpt:
-                load_model(model, cpt, strict=False)
+        filename = os.path.splitext(os.path.basename(model_path))[0]
+        jit_filename = f'{filename}_{device.type}_{device.index}.torchscript' if device.index is not None else f'{filename}_{device.type}.torchscript'
+        jit_file = os.path.join(JIT_DIR, jit_filename)
+        if not os.path.exists(jit_file):
+            model = E2E(4, 1, (2, 2))
+            # Keep torch.load for backward compatibility, but discourage the use of this loading method
+            if '.safetensors' in model_path:
+                with safe_open(model_path, 'pt', device=str(device) if device.type == 'cuda' else 'cpu') as cpt:
+                    load_model(model, cpt, strict=False)
+            else:
+                cpt = torch.load(model_path, map_location=device if device.type == 'cuda' else 'cpu')
+                model.load_state_dict(cpt, strict=False)
+            model = model.to(device)
+
+            # FIXME: DirectML backend seems to have issues with JIT. Disable it for now.
+            if device.type == 'privateuseone':
+                model = model.eval()
+                self.use_jit = True
+            else:
+                model = torch.jit.optimize_for_inference(torch.jit.script(model.eval()))
+                torch.jit.save(model, jit_file)
+                self.use_jit = False
         else:
-            cpt = torch.load(model_path, map_location=device if device.type == 'cuda' else 'cpu')
-            model.load_state_dict(cpt, strict=False)
-        model.eval().to(device)
+            model = torch.jit.load(jit_file)
+            self.use_jit = False
 
         self.model = model
 
