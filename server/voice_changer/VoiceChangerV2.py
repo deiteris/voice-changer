@@ -127,6 +127,33 @@ class VoiceChangerV2(VoiceChangerIF):
         return self.voiceChangerModel.get_processing_sampling_rate()
 
     @torch.no_grad()
+    def convert(self, audio_in: AudioInOutFloat, sample_rate: int) -> tuple[torch.Tensor, int]:
+        total_audio = audio_in.shape[0]
+        offset = 0
+        final_size = 0
+        block_size = sample_rate * 5
+        audio_chunks: list[torch.Tensor] = []
+        while total_audio > 0:
+            block = min(total_audio, block_size)
+
+            audio = self.voiceChangerModel.convert(audio_in[offset : offset + block], sample_rate)
+
+            total_audio -= block
+            offset += block
+            final_size += audio.shape[0]
+            audio_chunks.append(audio)
+        # TODO: Return list of tensors with crossfade + sola + block size (no extra?)
+        # Use all the same logic for SOLA as below
+        output_audio = torch.zeros(final_size, device=self.device_manager.device, dtype=torch.float32)
+        write_counter = 0
+        for chunk in audio_chunks:
+            size = chunk.shape[0]
+            output_audio[write_counter : write_counter + size] = chunk
+            write_counter += chunk.shape[0]
+
+        return output_audio.detach().cpu().numpy(), self.get_processing_sampling_rate()
+
+    @torch.no_grad()
     def on_request(self, audio_in: AudioInOutFloat) -> tuple[AudioInOutFloat, list[Union[int, float]]]:
         if self.voiceChangerModel is None:
             raise VoiceChangerIsNotSelectedException("Voice Changer is not selected.")

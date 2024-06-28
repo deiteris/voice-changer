@@ -4,6 +4,10 @@ import sys
 import shutil
 import threading
 import numpy as np
+import torch
+import soundfile as sf
+from io import BytesIO, FileIO
+from librosa import to_mono
 from downloader.SampleDownloader import downloadSample, getSampleInfos
 import logging
 from voice_changer.Local.ServerDevice import ServerDevice, ServerDeviceCallbacks
@@ -205,6 +209,20 @@ class VoiceChangerManager(ServerDeviceCallbacks):
             self.voiceChanger.update_settings(key, val, old_value)
 
         return self.get_info()
+
+    def convert(self, file: FileIO) -> bytes:
+        if self.voiceChanger is None:
+            logger.info("Voice Change is not loaded. Did you load a correct model?")
+            return None
+
+        data, in_sr = sf.read(file, dtype=np.float32)
+        with torch.no_grad():
+            output, out_sr = self.voiceChanger.convert(to_mono(data.T), in_sr)
+
+        with BytesIO() as wav_io:
+            sf.write(wav_io, output, out_sr, format='WAV')
+            wav_io.seek(0)
+            return wav_io.read()
 
     def changeVoice(self, receivedData: AudioInOut) -> tuple[AudioInOut, tuple, tuple | None]:
         if self.settings.passThrough:  # パススルー

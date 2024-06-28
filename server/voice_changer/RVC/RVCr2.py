@@ -52,6 +52,7 @@ class RVCr2(VoiceChangerModel):
 
         self.resampler_in: tat.Resample | None = None
         self.resampler_out: tat.Resample | None = None
+        self.resamplers: dict[str, torch.Tensor] = {}
 
         self.input_sample_rate = self.settings.inputSampleRate
         self.output_sample_rate = self.settings.outputSampleRate
@@ -180,17 +181,16 @@ class RVCr2(VoiceChangerModel):
         if self.is_half:
             audio_in_t = audio_in_t.half()
 
-        convert_feature_size_16k = audio_in_t.shape[0] // self.window
+        resampler_key = f'{self.device_manager.device}_{sample_rate}-{self.sr}'
+        if resampler_key not in self.resamplers:
+            self.resamplers[resampler_key] = tat.Resample(
+                orig_freq=sample_rate,
+                new_freq=self.sr,
+                dtype=self.dtype
+            ).to(self.device_manager.device)
 
-        audio_in_16k = tat.Resample(
-            orig_freq=sample_rate,
-            new_freq=self.sr,
-            dtype=self.dtype
-        ).to(self.device_manager.device)(audio_in_t)
-
-        vol_t = torch.sqrt(
-            torch.square(audio_in_16k).mean()
-        )
+        audio_in_16k = self.resamplers[resampler_key](audio_in_t)
+        convert_feature_size_16k = audio_in_16k.shape[0] // self.window
 
         audio_model = self.pipeline.exec(
             self.settings.dstId,
@@ -209,11 +209,7 @@ class RVCr2(VoiceChangerModel):
             self.settings.protect,
         )
 
-        # TODO: Need to handle resampling for individual files
-        # FIXME: Why the heck does it require another sqrt to amplify the volume?
-        audio_out: torch.Tensor = self.resampler_out(audio_model * torch.sqrt(vol_t))
-
-        return audio_out
+        return audio_model
 
     def inference(self, audio_in: AudioInOutFloat):
         if self.pipeline is None:
