@@ -1,0 +1,14 @@
+name: Test Workflow
+
+on:
+  workflow_dispatch: # allows manual triggering
+
+jobs:
+  create-tag:
+    runs-on: windows-latest
+
+    steps:
+    - name: Exec
+      shell: powershell
+      run: |
+        Get-ItemProperty -Path 'HKLM:\SOFTWARE\Classes\Installer\Dependencies\VC,redist.x86,*' -Name Version
