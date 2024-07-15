@@ -1,7 +1,10 @@
 name: Test Workflow
 
 on:
-  workflow_dispatch: # allows manual triggering
+    push:
+        branches: [ master-custom ]
+    pull_request:
+        branches: [ master-custom ]
 
 jobs:
   create-tag:
