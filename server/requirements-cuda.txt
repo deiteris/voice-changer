@@ -4,8 +4,8 @@
 --extra-index-url https://download.pytorch.org/whl/cu121
 --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
 torch>=2.4.0
-# Linux doesn't seem to include some cuDNN libraries
-nvidia-cudnn-cu12; sys_platform=='linux'
+# Latest PyTorch doesn't seem to include cuDNN libraries anymore
+nvidia-cudnn-cu12
 torchaudio
 faiss-cpu==1.8.0; sys_platform!='linux'
 faiss-gpu; sys_platform=='linux'
