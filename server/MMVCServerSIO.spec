@@ -31,6 +31,8 @@ datas += collect_data_files('onnxscript', include_py_files=True)
 binaries = []
 if backend == 'dml':
   binaries += collect_dynamic_libs('torch_directml')
+if backend == 'cuda':
+  binaries += collect_dynamic_libs('nvidia-cudnn-cu12')
 
 hiddenimports = ['app']
 hiddenimports += collect_submodules('scipy') # Fix "ModuleNotFoundError: No module named 'scipy._lib.*'"
