@@ -1,6 +1,6 @@
 import os
 import sys
-from const import ROOT_PATH
+from const import ROOT_PATH, TMP_DIR
 # NOTE: This is required to fix current working directory on macOS
 os.chdir(ROOT_PATH)
 if sys.platform == 'darwin':
@@ -13,6 +13,7 @@ os.environ['CUDNN_PATH'] = ''
 # Fix high CPU usage caused by faiss-cpu for AMD CPUs.
 # https://github.com/facebookresearch/faiss/issues/53#issuecomment-288351188
 os.environ['OMP_WAIT_POLICY'] = 'PASSIVE'
+os.environ['NUMBA_CACHE_DIR'] = TMP_DIR
 
 from voice_changer.VoiceChangerManager import VoiceChangerManager
 from sio.MMVC_SocketIOApp import MMVC_SocketIOApp
