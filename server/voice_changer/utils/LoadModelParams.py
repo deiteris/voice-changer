@@ -24,3 +24,4 @@ class LoadModelParams:
     sampleId: str
     files: list[LoadModelParamFile]
     params: dict
+    embedder: str | None = None

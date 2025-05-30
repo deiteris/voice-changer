@@ -44,6 +44,14 @@ class RVCModelSlotGenerator(ModelSlotGenerator):
                 convert_single(modelPath, True)
                 filename, _ = os.path.splitext(os.path.basename(modelPath))
                 slotInfo.modelFile = f'{filename}.safetensors'
+
+        # Manually set embedder to SPIN, because it's not in the metadata
+        if props.embedder == "spin_base":
+            slotInfo.embedder = "spin_base"
+            slotInfo.embOutputLayer = 12
+            slotInfo.embChannels = 768
+            slotInfo.useFinalProj = False
+        
         return slotInfo
 
     @classmethod

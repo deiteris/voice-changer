@@ -46,6 +46,11 @@ async def downloadWeight(params: ServerSettings):
             "hash": "ab288ca5b540a4a15909a40edf875d1e",
         },
         {
+            "url": "https://huggingface.co/tg-develop/spin_rvc/resolve/main/spin.onnx",
+            "saveTo": params.spin_onnx,
+            "hash": "d2da4abf1eaae250e87d128f399f891b",
+        },
+        {
             "url": "https://huggingface.co/wok000/weights/resolve/4a9dbeb086b66721378b4fb29c84bf94d3e076ec/rmvpe/rmvpe_20231006.pt",
             "saveTo": params.rmvpe,
             "hash": "7989809b6b54fb33653818e357bcb643",

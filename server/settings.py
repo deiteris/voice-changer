@@ -9,6 +9,7 @@ class ServerSettings(BaseSettings):
     model_dir: str = 'model_dir'
     content_vec_500: str = 'pretrain/checkpoint_best_legacy_500.pt'
     content_vec_500_onnx: str = 'pretrain/content_vec_500.onnx'
+    spin_onnx: str = 'pretrain/spin.onnx'
     content_vec_500_onnx_on: bool = True
     # hubert_base: str = 'pretrain/hubert_base.pt'
     # hubert_base_jp: str = 'pretrain/rinna_hubert_base_jp.pt'

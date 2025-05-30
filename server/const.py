@@ -32,7 +32,7 @@ FRONTEND_DIR = os.path.join(sys._MEIPASS, "dist") if hasattr(sys, "_MEIPASS") el
 
 VERSION_FILE = os.path.join(sys._MEIPASS, "version.txt") if hasattr(sys, "_MEIPASS") else 'version.txt'
 
-EmbedderType: TypeAlias = Literal["hubert_base", "contentvec"]
+EmbedderType: TypeAlias = Literal["hubert_base", "contentvec", "spin_base"]
 
 
 class EnumInferenceTypes(Enum):
