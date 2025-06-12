@@ -12,9 +12,18 @@ export type FileUploaderScreenProps = {
     backToSlotManager: () => void;
 };
 
+// Define available embedders
+const RVC_EMBEDDERS = {
+    hubert_base: "Hubert (Default)",
+    spin_base: "SPIN",
+} as const;
+
+type RvcEmbedderType = keyof typeof RVC_EMBEDDERS;
+
 export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
     const { serverSetting } = useAppState();
     const [voiceChangerType, setVoiceChangerType] = useState<VoiceChangerType>("RVC");
+    const [selectedEmbedder, setSelectedEmbedder] = useState<RvcEmbedderType>("hubert_base"); // New state for selected embedder
     const [uploadSetting, setUploadSetting] = useState<ModelUploadSetting>();
     const messageBuilderState = useMessageBuilder();
 
@@ -24,6 +33,7 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
         messageBuilderState.setMessage(__filename, "select", { ja: "ファイル選択", en: "select file" });
         messageBuilderState.setMessage(__filename, "upload", { ja: "アップロード", en: "upload" });
         messageBuilderState.setMessage(__filename, "uploading", { ja: "アップロード中", en: "uploading" });
+        messageBuilderState.setMessage(__filename, "rvc-embedder-select-label", { ja: "Embedderタイプ:", en: "Embedder Type:" });
         messageBuilderState.setMessage(__filename, "alert-model-ext", {
             ja: "ファイルの拡張子は次のモノである必要があります。",
             en: "extension of file should be the following.",
@@ -35,15 +45,43 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
     }, []);
 
     useEffect(() => {
+        const newParams: { embedder?: RvcEmbedderType } = {};
+        if (voiceChangerType === "RVC") {
+            newParams.embedder = selectedEmbedder;
+        }
+        setUploadSetting(prevSetting => {
+            const currentFiles = prevSetting?.files || [];
+            const currentInternalParams = prevSetting?.params || {};
+
+            return {
+                ...(prevSetting || { voiceChangerType: voiceChangerType, slot: props.targetIndex, isSampleMode: false, sampleId: null }),
+                voiceChangerType: voiceChangerType,
+                slot: props.targetIndex,
+                isSampleMode: false,
+                sampleId: null,
+                files: currentFiles,
+                params: {
+                    ...currentInternalParams,
+                    ...newParams
+                },
+            };
+        });
+    }, [props.targetIndex, voiceChangerType, selectedEmbedder]);
+
+    const resetUploadSettingState = () => {
+        const newResetParams: { embedder?: RvcEmbedderType } = {};
+        if (voiceChangerType === "RVC") {
+            newResetParams.embedder = selectedEmbedder;
+        }
         setUploadSetting({
             voiceChangerType: voiceChangerType,
             slot: props.targetIndex,
             isSampleMode: false,
             sampleId: null,
             files: [],
-            params: {},
+            params: newResetParams,
         });
-    }, [props.targetIndex, voiceChangerType]);
+    };
 
     const screen = useMemo(() => {
         if (props.screen != "FileUploader") {
@@ -54,6 +92,14 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
             return (
                 <option key={x} value={x}>
                     {x}
+                </option>
+            );
+        });
+
+        const rvcEmbedderOptions = Object.entries(RVC_EMBEDDERS).map(([value, label]) => {
+            return (
+                <option key={value} value={value}>
+                    {label}
                 </option>
             );
         });
@@ -108,9 +154,7 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
             }
             return rows;
         };
-        const fileRows = generateFileRowsByVCType(voiceChangerType);
-
-        // appState.serverSetting.uploadProgress == 0 ? `loading model...(wait about 20sec)` : `processing.... ${appState.serverSetting.uploadProgress.toFixed(1)}%` : ""
+        const fileRows = uploadSetting ? generateFileRowsByVCType(voiceChangerType) : [];
 
         const buttonLabel = serverSetting.uploadProgress == 0 ? messageBuilderState.getMessage(__filename, "upload") : messageBuilderState.getMessage(__filename, "uploading") + `(${serverSetting.uploadProgress.toFixed(1)}%)`;
         return (
@@ -122,6 +166,7 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
                         <span
                             onClick={() => {
                                 props.backToSlotManager();
+                                resetUploadSettingState();
                             }}
                             className="file-uploader-header-button"
                         >
@@ -133,12 +178,30 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
                         <select
                             value={voiceChangerType}
                             onChange={(e) => {
-                                setVoiceChangerType(e.target.value as VoiceChangerType);
+                                const newVcType = e.target.value as VoiceChangerType;
+                                setVoiceChangerType(newVcType);
+                                if (newVcType !== "RVC") {
+                                    setSelectedEmbedder("hubert_base");
+                                }
                             }}
                         >
                             {vcTypeOptions}
                         </select>
                     </div>
+
+                    {voiceChangerType === "RVC" && (
+                        <div className="file-uploader-voice-changer-select">
+                            {messageBuilderState.getMessage(__filename, "rvc-embedder-select-label")}
+                            <select
+                                value={selectedEmbedder}
+                                onChange={(e) => {
+                                    setSelectedEmbedder(e.target.value as RvcEmbedderType);
+                                }}
+                            >
+                                {rvcEmbedderOptions}
+                            </select>
+                        </div>
+                    )}
 
                     <div className="file-uploader-file-select-container">{fileRows}</div>
                     <div className="file-uploader-file-select-upload-button-container">
@@ -152,8 +215,14 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
                                     return;
                                 }
                                 if (checkModelSetting(uploadSetting)) {
-                                    serverSetting.uploadModel(uploadSetting).then(() => {
+                                    const finalUploadSetting = {
+                                        ...uploadSetting,
+                                        embedder: voiceChangerType === "RVC" ? selectedEmbedder : undefined,
+                                    };
+                                    console.log(finalUploadSetting);
+                                    serverSetting.uploadModel(finalUploadSetting).then(() => {
                                         props.backToSlotManager();
+                                        resetUploadSettingState();
                                     });
                                 } else {
                                     const errorMessage = messageBuilderState.getMessage(__filename, "alert-model-file");
@@ -167,7 +236,7 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
                 </div>
             </div>
         );
-    }, [props.screen, props.targetIndex, voiceChangerType, uploadSetting, serverSetting.uploadModel, serverSetting.uploadProgress]);
+    }, [props.screen, props.targetIndex, voiceChangerType, selectedEmbedder, uploadSetting, serverSetting.uploadModel, serverSetting.uploadProgress, messageBuilderState]);
 
     return screen;
 };

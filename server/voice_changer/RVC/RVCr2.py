@@ -182,11 +182,12 @@ class RVCr2(VoiceChangerModel):
 
         convert_feature_size_16k = audio_in_t.shape[0] // WINDOW_SIZE
 
-        audio_in_16k = tat.Resample(
+        resampler_temp = tat.Resample(
             orig_freq=sample_rate,
             new_freq=HUBERT_SAMPLE_RATE,
             dtype=self.dtype
-        ).to(self.device_manager.device)(audio_in_t)
+        ).to(self.device_manager.device)
+        audio_in_16k = resampler_temp(audio_in_t)
 
         vol_t = torch.sqrt(
             torch.square(audio_in_16k).mean()
