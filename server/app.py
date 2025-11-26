@@ -14,6 +14,11 @@ os.environ['CUDNN_PATH'] = ''
 # https://github.com/facebookresearch/faiss/issues/53#issuecomment-288351188
 os.environ['OMP_WAIT_POLICY'] = 'PASSIVE'
 
+import torch
+torch.set_float32_matmul_precision('high')
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
 from voice_changer.VoiceChangerManager import VoiceChangerManager
 from sio.MMVC_SocketIOApp import MMVC_SocketIOApp
 from restapi.MMVC_Rest import MMVC_Rest

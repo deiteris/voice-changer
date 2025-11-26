@@ -56,7 +56,7 @@ class ConvReluNorm(nn.Module):
             )
         )
         self.norm_layers.append(LayerNorm(hidden_channels))
-        self.relu_drop = nn.Sequential(nn.ReLU(), nn.Dropout(float(p_dropout)))
+        self.relu_drop = nn.Sequential(nn.ReLU(inplace=True), nn.Dropout(float(p_dropout), inplace=True))
         for _ in range(n_layers - 1):
             self.conv_layers.append(
                 nn.Conv1d(
@@ -93,7 +93,7 @@ class DDSConv(nn.Module):
         self.n_layers = n_layers
         self.p_dropout = float(p_dropout)
 
-        self.drop = nn.Dropout(float(p_dropout))
+        self.drop = nn.Dropout(float(p_dropout), inplace=True)
         self.convs_sep = nn.ModuleList()
         self.convs_1x1 = nn.ModuleList()
         self.norms_1 = nn.ModuleList()
@@ -114,17 +114,18 @@ class DDSConv(nn.Module):
             self.convs_1x1.append(nn.Conv1d(channels, channels, 1))
             self.norms_1.append(LayerNorm(channels))
             self.norms_2.append(LayerNorm(channels))
+        self.activation = nn.GELU()
 
     def forward(self, x, x_mask, g: Optional[torch.Tensor] = None):
         if g is not None:
-            x = x + g
+            x += g
         for i in range(self.n_layers):
             y = self.convs_sep[i](x * x_mask)
             y = self.norms_1[i](y)
-            y = F.gelu(y)
+            y = self.activation(y)
             y = self.convs_1x1[i](y)
             y = self.norms_2[i](y)
-            y = F.gelu(y)
+            y = self.activation(y)
             y = self.drop(y)
             x = x + y
         return x * x_mask
@@ -151,7 +152,7 @@ class WN(torch.nn.Module):
 
         self.in_layers = torch.nn.ModuleList()
         self.res_skip_layers = torch.nn.ModuleList()
-        self.drop = nn.Dropout(float(p_dropout))
+        self.drop = nn.Dropout(float(p_dropout), inplace=True)
 
         if gin_channels != 0:
             cond_layer = torch.nn.Conv1d(
@@ -326,15 +327,15 @@ class ResBlock1(torch.nn.Module):
         for c1, c2 in zip(self.convs1, self.convs2):
             xt = F.leaky_relu(x, self.lrelu_slope)
             if x_mask is not None:
-                xt = xt * x_mask
+                xt *= x_mask
             xt = c1(xt)
             xt = F.leaky_relu(xt, self.lrelu_slope, inplace=True)
             if x_mask is not None:
-                xt = xt * x_mask
+                xt *= x_mask
             xt = c2(xt)
             x = xt + x
         if x_mask is not None:
-            x = x * x_mask
+            x *= x_mask
         return x
 
     def remove_weight_norm(self):

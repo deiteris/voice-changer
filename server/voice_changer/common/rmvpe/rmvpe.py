@@ -38,7 +38,7 @@ class ConvBlockRes(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(out_channels, momentum=momentum),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Conv2d(
                 in_channels=out_channels,
                 out_channels=out_channels,
@@ -48,7 +48,7 @@ class ConvBlockRes(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(out_channels, momentum=momentum),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
         )
         if in_channels != out_channels:
             self.shortcut = nn.Conv2d(in_channels, out_channels, (1, 1))
@@ -156,7 +156,7 @@ class ResDecoderBlock(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(out_channels, momentum=momentum),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
         )
         self.conv2 = nn.ModuleList()
         self.conv2.append(ConvBlockRes(out_channels * 2, out_channels, momentum))
@@ -219,6 +219,9 @@ class DeepUnet(nn.Module):
         x = self.decoder(x, concat_tensors)
         return x
 
+class Sigmoid(nn.Module):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        return torch.sigmoid_(input)
 
 class E2E(nn.Module):
     def __init__(
@@ -245,12 +248,12 @@ class E2E(nn.Module):
             self.fc = nn.Sequential(
                 BiGRU(3 * 128, 256, n_gru),
                 nn.Linear(512, 360),
-                nn.Dropout(0.25),
-                nn.Sigmoid(),
+                nn.Dropout(0.25, inplace=True),
+                Sigmoid(),
             )
         else:
             self.fc = nn.Sequential(
-                nn.Linear(3 * nn.N_MELS, nn.N_CLASS), nn.Dropout(0.25), nn.Sigmoid()
+                nn.Linear(3 * nn.N_MELS, nn.N_CLASS), nn.Dropout(0.25, inplace=True), Sigmoid()
             )
 
     def forward(self, mel):
@@ -301,9 +304,7 @@ class MelSpectrogram(torch.nn.Module):
         hop_length_new = int(np.round(self.hop_length * speed))
         keyshift_key = str(keyshift) + "_" + str(audio.device)
         if keyshift_key not in self.hann_window:
-            self.hann_window[keyshift_key] = torch.hann_window(win_length_new).to(
-                audio.device
-            )
+            self.hann_window[keyshift_key] = torch.hann_window(win_length_new, device=audio.device)
         fft = torch.stft(
             audio,
             n_fft=n_fft_new,
@@ -323,7 +324,7 @@ class MelSpectrogram(torch.nn.Module):
         mel_output = torch.matmul(self.mel_basis, magnitude)
         if self.is_half:
             mel_output = mel_output.half()
-        log_mel_spec = torch.log(torch.clamp(mel_output, min=self.clamp))
+        log_mel_spec = torch.log_(torch.clamp_(mel_output, min=self.clamp))
         return log_mel_spec
 
 
@@ -334,7 +335,7 @@ class RMVPE:
             with safe_open(model_path, 'pt', device=str(device) if device.type == 'cuda' else 'cpu') as cpt:
                 load_model(model, cpt, strict=False)
         else:
-            cpt = torch.load(model_path, map_location=device if device.type == 'cuda' else 'cpu')
+            cpt = torch.load(model_path, map_location=device if device.type == 'cuda' else 'cpu', weights_only=True)
             model.load_state_dict(cpt, strict=False)
         model = model.eval().to(device)
 

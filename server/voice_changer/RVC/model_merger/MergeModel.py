@@ -30,7 +30,7 @@ def merge_model(params: ServerSettings, request: ModelMergerRequest):
                 weight = { k: cpt.get_tensor(k) for k in cpt.keys() }
                 config = json.loads(state_dict['config'])
         else:
-            state_dict = torch.load(path, map_location='cpu')
+            state_dict = torch.load(path, map_location='cpu', weights_only=True)
             if "model" in state_dict:
                 weight = extract(state_dict)
             else:

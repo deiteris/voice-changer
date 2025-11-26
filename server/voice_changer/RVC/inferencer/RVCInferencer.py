@@ -22,7 +22,7 @@ class RVCInferencer(Inferencer):
                 model = SynthesizerTrnMs256NSFsid(*config, is_half=is_half).to(dev)
                 load_model(model, cpt, strict=False)
         else:
-            cpt = torch.load(file, map_location=dev if dev.type == 'cuda' else 'cpu')
+            cpt = torch.load(file, map_location=dev if dev.type == 'cuda' else 'cpu', weights_only=True)
             model = SynthesizerTrnMs256NSFsid(*cpt["config"], is_half=is_half).to(dev)
             model.load_state_dict(cpt["weight"], strict=False)
 

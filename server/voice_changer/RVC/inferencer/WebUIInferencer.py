@@ -14,7 +14,7 @@ class WebUIInferencer(Inferencer):
         dev = device_manager.device
         is_half = device_manager.use_fp16()
 
-        cpt = torch.load(file, map_location="cpu")
+        cpt = torch.load(file, map_location="cpu", weights_only=True)
         model = SynthesizerTrnMsNSFsidM(**cpt["params"], is_half=is_half)
 
         model.eval()
