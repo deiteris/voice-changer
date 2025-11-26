@@ -4,7 +4,7 @@
 # # bash Anaconda3-2022.10-Linux-x86_64.sh
 
 # PyPI onnxruntime-gpu>=1.19 is compiled with CUDA 12.x and cuDNN 9.x
---extra-index-url https://download.pytorch.org/whl/cu126
+--extra-index-url https://download.pytorch.org/whl/cu128
 torch>=2.4.0
 torchaudio
 faiss-cpu; sys_platform!='linux'
