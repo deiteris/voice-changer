@@ -56,7 +56,7 @@ def _export2onnx(input_model: str, output_model_simple: str, metadata: dict):
             'params': json.loads(m.get('params', '{}'))
         }
     else:
-        cpt = torch.load(input_model, map_location=dev)
+        cpt = torch.load(input_model, map_location=dev, weights_only=True)
         data = {
             'config': cpt['config'],
             'params': cpt['params']

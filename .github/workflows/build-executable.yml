@@ -22,16 +22,16 @@ jobs:
           reqs: dml
           backend: dml
           python-version: '3.12'
-        - os: macos-13
-          os_suffix: macos-amd64
-          reqs: cpu
-          backend: cpu
-          python-version: '3.12'
-        - os: macos-latest
-          os_suffix: macos-arm64
-          reqs: cpu
-          backend: cpu
-          python-version: '3.12'
+        # - os: macos-13
+        #   os_suffix: macos-amd64
+        #   reqs: cpu
+        #   backend: cpu
+        #   python-version: '3.12'
+        # - os: macos-latest
+        #   os_suffix: macos-arm64
+        #   reqs: cpu
+        #   backend: cpu
+        #   python-version: '3.12'
         - os: ubuntu-20.04
           os_suffix: linux-amd64
           reqs: cpu

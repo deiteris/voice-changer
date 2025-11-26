@@ -30,7 +30,7 @@ class Encoder(nn.Module):
         self.p_dropout = p_dropout
         self.window_size = window_size
 
-        self.drop = nn.Dropout(p_dropout)
+        self.drop = nn.Dropout(p_dropout, inplace=True)
         self.attn_layers = nn.ModuleList()
         self.norm_layers_1 = nn.ModuleList()
         self.ffn_layers = nn.ModuleList()
@@ -98,7 +98,7 @@ class Decoder(nn.Module):
         self.proximal_bias = proximal_bias
         self.proximal_init = proximal_init
 
-        self.drop = nn.Dropout(p_dropout)
+        self.drop = nn.Dropout(p_dropout, inplace=True)
         self.self_attn_layers = nn.ModuleList()
         self.norm_layers_0 = nn.ModuleList()
         self.encdec_attn_layers = nn.ModuleList()
@@ -195,7 +195,7 @@ class MultiHeadAttention(nn.Module):
         self.conv_k = nn.Conv1d(channels, channels, 1)
         self.conv_v = nn.Conv1d(channels, channels, 1)
         self.conv_o = nn.Conv1d(channels, out_channels, 1)
-        self.drop = nn.Dropout(p_dropout)
+        self.drop = nn.Dropout(p_dropout, inplace=True)
 
         if window_size is not None:
             n_heads_rel = 1 if heads_share else n_heads
@@ -410,7 +410,7 @@ class FFN(nn.Module):
 
         self.conv_1 = nn.Conv1d(in_channels, filter_channels, kernel_size)
         self.conv_2 = nn.Conv1d(filter_channels, out_channels, kernel_size)
-        self.drop = nn.Dropout(p_dropout)
+        self.drop = nn.Dropout(p_dropout, inplace=True)
 
     def padding(self, x: torch.Tensor, x_mask: torch.Tensor) -> torch.Tensor:
         if self.causal:
@@ -422,9 +422,9 @@ class FFN(nn.Module):
     def forward(self, x: torch.Tensor, x_mask: torch.Tensor):
         x = self.conv_1(self.padding(x, x_mask))
         if self.is_activation:
-            x = x * torch.sigmoid(1.702 * x)
+            x = x.mul_(torch.sigmoid_(1.702 * x))
         else:
-            x = torch.relu(x)
+            x = torch.relu_(x)
         x = self.drop(x)
 
         x = self.conv_2(self.padding(x, x_mask))

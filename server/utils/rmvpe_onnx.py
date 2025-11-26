@@ -364,7 +364,7 @@ if __name__ == '__main__':
     mel_sample = mel_extractor(audio_sample)
     threshold_sample = torch.tensor(0.03, dtype=torch.float32, device=dev)
 
-    cpt = torch.load(r'C:\Sources\voice-changer\server\pretrain\rmvpe.pt', map_location='cpu')
+    cpt = torch.load(r'C:\Sources\voice-changer\server\pretrain\rmvpe.pt', map_location='cpu', weights_only=True)
     rmvpe = RMVPEModule(cpt).eval().to(dev)
     rmvpe_onnx = convert(
         rmvpe,

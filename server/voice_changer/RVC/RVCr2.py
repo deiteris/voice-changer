@@ -72,7 +72,6 @@ class RVCr2(VoiceChangerModel):
                 self.slotInfo, self.settings.f0Detector, self.settings.useONNX, force_reload
             )
         except Exception as e:  # NOQA
-            logger.error("Failed to create pipeline.")
             logger.exception(e)
             return
 
