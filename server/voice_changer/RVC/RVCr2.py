@@ -294,7 +294,7 @@ class RVCr2(VoiceChangerModel):
         self.slotInfo.modelTypeOnnx = EnumInferenceTypes.onnxRVC.value if self.slotInfo.f0 else EnumInferenceTypes.onnxRVCNono.value
         saveSlotInfo(self.params.model_dir, self.slotInfo.slotIndex, self.slotInfo)
 
-    def get_model_current(self) -> dict:
+    def get_model_current(self) -> list[dict]:
         return [
             {
                 "key": "defaultTune",

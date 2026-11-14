@@ -35,7 +35,7 @@ class ModelSlotManager:
         return self.modelSlots
 
     def get_slot_info(self, slotIndex: int):
-        if slotIndex == -1:
+        if slotIndex < 0 or slotIndex >= len(self.modelSlots):
             return
         return self._load_model_slot(slotIndex)
 
@@ -43,6 +43,9 @@ class ModelSlotManager:
         self._save_model_slot(slotIndex, slotInfo)
 
     def update_model_info(self, slot_index: int, key: str, val):
+        if slot_index < 0 or slot_index >= len(self.modelSlots):
+            logger.warning(f"Invalid slot index for update_model_info: {slot_index}")
+            return
         logger.info(f"UPDATE MODEL INFO: {key}={val}")
         slotInfo = self._load_model_slot(slot_index)
         if key == "speakers":

@@ -32,18 +32,18 @@ jobs:
           reqs: cpu
           backend: cpu
           python-version: '3.12'
-        - os: ubuntu-20.04
+        - os: ubuntu-22.04
           os_suffix: linux-amd64
           reqs: cpu
           backend: cpu
           python-version: '3.12'
-        - os: ubuntu-20.04
+        - os: ubuntu-22.04
           os_suffix: linux-amd64
           reqs: cuda
           backend: cuda
           # Linux CUDA depends on faiss-gpu-cp310
           python-version: '3.10'
-        - os: ubuntu-20.04
+        - os: ubuntu-22.04
           os_suffix: linux-amd64
           reqs: rocm
           backend: rocm
@@ -54,7 +54,7 @@ jobs:
       BACKEND: ${{ matrix.backend }}
     steps:
     - name: Maximize build space
-      if: matrix.os == 'ubuntu-20.04'
+      if: matrix.os == 'ubuntu-22.04'
       uses: AdityaGarg8/remove-unwanted-software@v3
       with:
         remove-swapfile: 'true'
@@ -86,7 +86,7 @@ jobs:
     - name: Add CUDA library symlinks
       run: ln -svf nvidia/*/lib/*.so* .
       shell: bash
-      if: matrix.os == 'ubuntu-20.04' && matrix.backend == 'cuda'
+      if: matrix.os == 'ubuntu-22.04' && matrix.backend == 'cuda'
       working-directory: ./server/dist/MMVCServerSIO/_internal
     - name: Pack artifact
       shell: bash

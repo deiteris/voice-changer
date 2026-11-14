@@ -87,6 +87,8 @@ class VoiceChangerManager(ServerAudioCallbacks):
             logger.info(f"Sample download.... {params}")
             await downloadSample(self.params.sample_mode, params.sampleId, self.params.model_dir, params.slot, params.params)
             self.modelSlotManager.getAllSlotInfo(reload=True)
+            if params.slot == self.settings.modelSlotIndex:
+                self.initialize(params.slot)
             info = {"status": "OK"}
             return info
 
@@ -117,8 +119,11 @@ class VoiceChangerManager(ServerAudioCallbacks):
         if params.voiceChangerType == "RVC":
             slotInfo = RVCModelSlotGenerator.load_model(params)
             self.modelSlotManager.save_model_slot(params.slot, slotInfo)
+            if params.slot == self.settings.modelSlotIndex:
+                self.initialize(params.slot)
 
         logger.info(f"params, {params}")
+        return {"status": "OK"}
 
     def get_info(self):
         data = self.settings.to_dict()
@@ -240,6 +245,8 @@ class VoiceChangerManager(ServerAudioCallbacks):
 
     def update_model_default(self):
         # self.vc.update_model_default()
+        if self.settings.modelSlotIndex < 0:
+            return self.get_info()
         current_settings = self.vc.get_current_model_settings()
         for setting in current_settings:
             self.modelSlotManager.update_model_info(self.settings.modelSlotIndex, **setting)
@@ -247,7 +254,8 @@ class VoiceChangerManager(ServerAudioCallbacks):
 
     def update_model_info(self, newData: str):
         # self.vc.update_model_info(newData)
-        self.modelSlotManager.update_model_info(newData)
+        data = json.loads(newData)
+        self.modelSlotManager.update_model_info(int(data["slot"]), data["key"], data["val"])
         return self.get_info()
 
     def upload_model_assets(self, params: str):

@@ -43,7 +43,7 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
             files: [],
             params: {},
         });
-    }, [props.targetIndex, voiceChangerType]);
+    }, [props.screen, props.targetIndex, voiceChangerType]);
 
     const screen = useMemo(() => {
         if (props.screen != "FileUploader") {

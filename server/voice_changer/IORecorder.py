@@ -9,10 +9,10 @@ STREAM_INPUT_FILE = os.path.join(TMP_DIR, "in.wav")
 STREAM_OUTPUT_FILE = os.path.join(TMP_DIR, "out.wav")
 
 class IORecorder:
-    def __init__(self, input_sampling_rate: int, output_sampling_rate: int):
+    def __init__(self):
         self.fi = None
         self.fo = None
-        self.open(input_sampling_rate, output_sampling_rate)
+        self._clear()
 
     def _clear(self):
         self.close()

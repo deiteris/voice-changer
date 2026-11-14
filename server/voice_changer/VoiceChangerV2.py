@@ -31,10 +31,12 @@ class VoiceChangerV2:
         self.vcmodel: VoiceChangerModel | None = None
         self.device_manager = DeviceManager.get_instance()
         self.sola_buffer: torch.Tensor | None = None
-        self.io_recorder = IORecorder(
-            self.settings.inputSampleRate,
-            self.settings.outputSampleRate,
-        )
+        self.io_recorder = IORecorder()
+        if self.settings.recordIO:
+            self.io_recorder.open(
+                self.settings.inputSampleRate,
+                self.settings.outputSampleRate,
+            )
         self._generate_strength()
 
     def initialize(self, vcmodel: VoiceChangerModel):
@@ -43,8 +45,9 @@ class VoiceChangerV2:
         self.vcmodel.initialize()
 
     def set_slot_info(self, slot_info: ModelSlots):
-        self.vcmodel.set_slot_info(slot_info)
-        self.vcmodel.initialize()
+        if self.vcmodel is not None:
+            self.vcmodel.set_slot_info(slot_info)
+            self.vcmodel.initialize()
 
     def get_type(self) -> VoiceChangerType:
         if self.vcmodel is None:
@@ -52,20 +55,24 @@ class VoiceChangerV2:
         return self.vcmodel.voiceChangerType
 
     def set_input_sample_rate(self):
-        self.io_recorder.open(self.settings.inputSampleRate, self.settings.outputSampleRate)
+        if self.settings.recordIO:
+            self.io_recorder.open(self.settings.inputSampleRate, self.settings.outputSampleRate)
 
         self.extra_frame = int(self.settings.extraConvertSize * self.settings.inputSampleRate)
         self.crossfade_frame = int(self.settings.crossFadeOverlapSize * self.settings.inputSampleRate)
         self.sola_search_frame = self.settings.inputSampleRate // 100
         self._generate_strength()
 
-        self.vcmodel.set_sampling_rate(self.settings.inputSampleRate, self.settings.outputSampleRate)
-        self.vcmodel.realloc(self.block_frame, self.extra_frame, self.crossfade_frame, self.sola_search_frame)
+        if self.vcmodel is not None:
+            self.vcmodel.set_sampling_rate(self.settings.inputSampleRate, self.settings.outputSampleRate)
+            self.vcmodel.realloc(self.block_frame, self.extra_frame, self.crossfade_frame, self.sola_search_frame)
 
     def set_output_sample_rate(self):
-        self.io_recorder.open(self.settings.inputSampleRate, self.settings.outputSampleRate)
+        if self.settings.recordIO:
+            self.io_recorder.open(self.settings.inputSampleRate, self.settings.outputSampleRate)
 
-        self.vcmodel.set_sampling_rate(self.settings.inputSampleRate, self.settings.outputSampleRate)
+        if self.vcmodel is not None:
+            self.vcmodel.set_sampling_rate(self.settings.inputSampleRate, self.settings.outputSampleRate)
 
     def get_info(self):
         if self.vcmodel is not None:
@@ -87,6 +94,11 @@ class VoiceChangerV2:
         elif key == 'crossFadeOverlapSize':
             self.crossfade_frame = int(val * self.settings.inputSampleRate)
             self._generate_strength()
+        elif key == 'recordIO':
+            if val:
+                self.io_recorder.open(self.settings.inputSampleRate, self.settings.outputSampleRate)
+            else:
+                self.io_recorder.close()
 
         if self.vcmodel is not None:
             self.vcmodel.update_settings(key, val, old_val)
@@ -164,7 +176,7 @@ class VoiceChangerV2:
         mainprocess_time = t.secs
 
         # 後処理
-        if self.settings.recordIO:
+        if self.settings.recordIO and self.io_recorder.fi is not None and self.io_recorder.fo is not None:
             self.io_recorder.write_input((audio_in * 32767).astype(np.int16).tobytes())
             self.io_recorder.write_output((result * 32767).astype(np.int16).tobytes())
 
@@ -172,7 +184,11 @@ class VoiceChangerV2:
 
     @torch.no_grad()
     def export2onnx(self):
+        if self.vcmodel is None:
+            return None
         return self.vcmodel.export2onnx()
 
-    def get_current_model_settings(self) -> dict:
+    def get_current_model_settings(self) -> list[dict]:
+        if self.vcmodel is None:
+            return []
         return self.vcmodel.get_model_current()

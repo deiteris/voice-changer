@@ -43,5 +43,5 @@ class VoiceChangerModel(Protocol):
     def export2onnx() -> Any:
         ...
 
-    def get_model_current(self) -> dict:
+    def get_model_current(self) -> list[dict]:
         ...
