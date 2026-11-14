@@ -7,13 +7,13 @@
 msvc-runtime>=14.38; sys_platform=='win32'
 uvicorn
 pyOpenSSL
-numpy<2 # Not all modules have migrated to NumPy 2 yet. Using latest NumPy 1 version
+numpy>=2.0.0
 python-socketio
 fastapi
 python-multipart
 scipy
 librosa
-sounddevice<0.5.0 # https://github.com/spatialaudio/python-sounddevice/pull/539
+sounddevice>=0.5.0
 python-dotenv
 pydantic-settings
 xxhash

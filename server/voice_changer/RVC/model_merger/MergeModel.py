@@ -30,7 +30,7 @@ def merge_model(params: ServerSettings, request: ModelMergerRequest):
                 weight = { k: cpt.get_tensor(k) for k in cpt.keys() }
                 config = json.loads(state_dict['config'])
         else:
-            state_dict = torch.load(path, map_location='cpu')
+            state_dict = torch.load(path, map_location='cpu', weights_only=False)
             if "model" in state_dict:
                 weight = extract(state_dict)
             else:
@@ -73,10 +73,13 @@ def merge_model(params: ServerSettings, request: ModelMergerRequest):
     logger.info("merge done. write metadata.")
 
     merged["config"] = config
-    merged["params"] = state_dict["params"] if "params" in state_dict else None
+    params_val = state_dict.get("params")
+    if isinstance(params_val, str):
+        params_val = json.loads(params_val)
+    merged["params"] = params_val
     merged["version"] = state_dict["version"] if "version" in state_dict else None
     merged["sr"] = state_dict["sr"]
-    merged["f0"] = int(state_dict["f0"] == "1" or state_dict["f0"] == "True")
+    merged["f0"] = int(state_dict["f0"] in (1, "1", True, "True"))
     try:
         # Some forks do not include info apparently (?)
         merged["info"] = state_dict["info"]

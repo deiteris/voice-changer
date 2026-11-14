@@ -1,14 +1,26 @@
 # Based on https://github.com/yxlllc/RMVPE/blob/main/export.py
 
+import inspect
 from typing import List, Optional
 
-from onnxsim import simplify
 import onnx
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
 from librosa.filters import mel
 from io import BytesIO
+
+try:
+    import onnxslim
+
+    def _simplify_onnx(model: onnx.ModelProto) -> onnx.ModelProto:
+        return onnxslim.slim(model) or model
+except ImportError:
+    from onnxsim import simplify
+
+    def _simplify_onnx(model: onnx.ModelProto) -> onnx.ModelProto:
+        simplified, _ = simplify(model)
+        return simplified
 
 class BiGRU(nn.Module):
     def __init__(self, input_features, hidden_features, num_layers):
@@ -338,6 +350,10 @@ class RMVPEModule(torch.nn.Module):
         return f0 * ~uv
 
 def convert(pt_model: torch.nn.Module, input_names: list[str], inputs: tuple[torch.Tensor], output_names: list[str], dynamic_axes: dict) -> onnx.ModelProto:
+    export_kwargs = {}
+    if "dynamo" in inspect.signature(torch.onnx.export).parameters:
+        export_kwargs["dynamo"] = False
+
     with BytesIO() as io:
         torch.onnx.export(
             pt_model,
@@ -348,8 +364,9 @@ def convert(pt_model: torch.nn.Module, input_names: list[str], inputs: tuple[tor
             verbose=False,
             input_names=input_names,
             output_names=output_names,
+            **export_kwargs,
         )
-        model, _ = simplify(onnx.load_model_from_string(io.getvalue()))
+        model = _simplify_onnx(onnx.load_model_from_string(io.getvalue()))
     return model
 
 if __name__ == '__main__':
@@ -364,7 +381,7 @@ if __name__ == '__main__':
     mel_sample = mel_extractor(audio_sample)
     threshold_sample = torch.tensor(0.03, dtype=torch.float32, device=dev)
 
-    cpt = torch.load(r'C:\Sources\voice-changer\server\pretrain\rmvpe.pt', map_location='cpu')
+    cpt = torch.load(r'C:\Sources\voice-changer\server\pretrain\rmvpe.pt', map_location='cpu', weights_only=False)
     rmvpe = RMVPEModule(cpt).eval().to(dev)
     rmvpe_onnx = convert(
         rmvpe,

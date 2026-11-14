@@ -8,8 +8,9 @@ torch
 torchaudio
 faiss-cpu
 
+onnx
 onnxscript
-onnxsim
+onnxslim
 onnxruntime
 torchcrepe
 torchfcpe

@@ -8,8 +8,9 @@ torch
 torchaudio
 faiss-cpu
 
+onnx
 onnxscript
-onnxsim
+onnxslim
 onnxruntime-rocm @ https://repo.radeon.com/rocm/manylinux/rocm-rel-6.2.3/onnxruntime_rocm-1.18.0-cp310-cp310-linux_x86_64.whl
 torchcrepe
 torchfcpe

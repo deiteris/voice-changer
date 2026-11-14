@@ -1,9 +1,11 @@
+import os
 import torch
 import onnxruntime
 import re
 import threading
 from typing import TypedDict, Literal
 from enum import IntFlag
+from const import TMP_DIR
 
 try:
     import torch_directml
@@ -49,6 +51,17 @@ class DeviceManager(object):
         self.force_fp32 = False
         self.disable_jit = False
         self.lock = threading.Lock()
+        cache_dir = os.environ.get("TORCHINDUCTOR_CACHE_DIR")
+        if cache_dir:
+            try:
+                os.makedirs(cache_dir, exist_ok=True)
+            except OSError:
+                os.environ["TORCHINDUCTOR_CACHE_DIR"] = os.path.abspath(os.path.join(TMP_DIR, "torchinductor_cache"))
+        if self.cuda_enabled:
+            torch.backends.cudnn.benchmark = False
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+            torch.set_float32_matmul_precision("high")
         logger.info('Initialized DeviceManager. Backend statuses:')
         logger.info(f'* DirectML: {self.dml_enabled}, device count: {torch_directml.device_count()}')
         logger.info(f'* CUDA: {self.cuda_enabled}, device count: {torch.cuda.device_count()}')
@@ -115,18 +128,25 @@ class DeviceManager(object):
         return devices
 
     def get_onnx_execution_provider(self):
+        cpu_threads = min(os.cpu_count() or 8, 16)
         cpu_settings = {
-            "intra_op_num_threads": 8,
+            "intra_op_num_threads": cpu_threads,
             "execution_mode": onnxruntime.ExecutionMode.ORT_PARALLEL,
-            "inter_op_num_threads": 8,
+            "inter_op_num_threads": max(2, cpu_threads // 2),
         }
         availableProviders = onnxruntime.get_available_providers()
         if self.device.type == 'cuda' and "ROCMExecutionProvider" in availableProviders:
-            return ["ROCMExecutionProvider", "CPUExecutionProvider"], [{"device_id": self.device.index}, cpu_settings]
+            return ["ROCMExecutionProvider", "CPUExecutionProvider"], [{"device_id": self.device.index or 0}, cpu_settings]
         elif self.device.type == 'cuda' and "CUDAExecutionProvider" in availableProviders:
-            return ["CUDAExecutionProvider", "CPUExecutionProvider"], [{"device_id": self.device.index}, cpu_settings]
+            cuda_settings = {
+                "device_id": self.device.index or 0,
+                "cudnn_conv_algo_search": "HEURISTIC",
+                "cudnn_conv_use_max_workspace": "1",
+                "do_copy_in_default_stream": "1",
+            }
+            return ["CUDAExecutionProvider", "CPUExecutionProvider"], [cuda_settings, cpu_settings]
         elif self.device.type == 'privateuseone' and "DmlExecutionProvider" in availableProviders:
-            return ["DmlExecutionProvider", "CPUExecutionProvider"], [{"device_id": self.device.index}, cpu_settings]
+            return ["DmlExecutionProvider", "CPUExecutionProvider"], [{"device_id": self.device.index or 0}, cpu_settings]
         elif 'CoreMLExecutionProvider' in availableProviders:
             coreml_flags = CoreMLFlag.ONLY_ENABLE_DEVICE_WITH_ANE
             return ["CoreMLExecutionProvider", "CPUExecutionProvider"], [{'coreml_flags': coreml_flags}, cpu_settings]

@@ -4,8 +4,7 @@ module.exports = {
         es2021: true,
         node: true,
     },
-    extends: ["eslint:recommended", "plugin:react/recommended", "plugin:@typescript-eslint/recommended"],
-    parser: "@typescript-eslint/parser",
+    extends: ["eslint:recommended", "plugin:react/recommended"],
     parserOptions: {
         ecmaFeatures: {
             jsx: true,
@@ -13,6 +12,11 @@ module.exports = {
         ecmaVersion: 13,
         sourceType: "module",
     },
-    plugins: ["react", "@typescript-eslint"],
+    plugins: ["react"],
+    settings: {
+        react: {
+            version: "detect",
+        },
+    },
     rules: {},
 };

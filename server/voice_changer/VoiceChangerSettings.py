@@ -1,5 +1,6 @@
 # from const import PitchExtractorType
 from typing import NamedTuple
+from voice_changer.common.deviceManager.DeviceManager import DeviceManager
 
 import logging
 logger = logging.getLogger(__name__)
@@ -15,6 +16,11 @@ class SetPropertyResult(NamedTuple):
     old_value: str | int | float | bool | None
 
 class VoiceChangerSettings:
+
+    def __init__(self):
+        device_manager = DeviceManager.get_instance()
+        if device_manager.cuda_enabled or device_manager.dml_enabled:
+            self._gpu = 0
 
     def to_dict(self) -> dict:
         return self.get_properties()

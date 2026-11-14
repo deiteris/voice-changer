@@ -1,14 +1,26 @@
+import inspect
 import os
 import json
 import torch
-from onnxsim import simplify
 import onnx
+
+try:
+    import onnxslim
+
+    def _simplify_onnx(model: onnx.ModelProto) -> onnx.ModelProto:
+        return onnxslim.slim(model) or model
+except ImportError:
+    from onnxsim import simplify
+
+    def _simplify_onnx(model: onnx.ModelProto) -> onnx.ModelProto:
+        simplified, _ = simplify(model)
+        return simplified
 import safetensors
 from const import EnumInferenceTypes
 from data.ModelSlot import RVCModelSlot
 from voice_changer.common.SafetensorsUtils import load_model
 from voice_changer.common.deviceManager.DeviceManager import DeviceManager
-from voice_changer.RVC.inferencer.rvc_models.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM  # type: ignore
+from voice_changer.RVC.inferencer.rvc_models.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM, SynthesizerTrnMsNSFsidM_nono  # type: ignore
 from settings import get_settings
 from io import BytesIO
 import logging
@@ -56,10 +68,10 @@ def _export2onnx(input_model: str, output_model_simple: str, metadata: dict):
             'params': json.loads(m.get('params', '{}'))
         }
     else:
-        cpt = torch.load(input_model, map_location=dev)
+        cpt = torch.load(input_model, map_location=dev, weights_only=False)
         data = {
             'config': cpt['config'],
-            'params': cpt['params']
+            'params': cpt.get('params') or {}
         }
 
     logger.info(f'Exporting to ONNX on {dev}')
@@ -68,16 +80,16 @@ def _export2onnx(input_model: str, output_model_simple: str, metadata: dict):
     if metadata["modelType"] == EnumInferenceTypes.pyTorchRVC.value:
         net_g_onnx = SynthesizerTrnMsNSFsidM(*data["config"], 256, is_half=is_half)
     elif metadata["modelType"] == EnumInferenceTypes.pyTorchRVCNono.value:
-        net_g_onnx = SynthesizerTrnMsNSFsidM(*data["config"], 256, is_half=is_half)
+        net_g_onnx = SynthesizerTrnMsNSFsidM_nono(*data["config"], 256, is_half=is_half)
     # pyTorchWebUI already includes number of text embeddings in the model config (?)
     elif metadata["modelType"] == EnumInferenceTypes.pyTorchWebUI.value:
         net_g_onnx = SynthesizerTrnMsNSFsidM(**data["params"], is_half=is_half)
     elif metadata["modelType"] == EnumInferenceTypes.pyTorchWebUINono.value:
-        net_g_onnx = SynthesizerTrnMsNSFsidM(**data["params"], is_half=is_half)
+        net_g_onnx = SynthesizerTrnMsNSFsidM_nono(**data["params"], is_half=is_half)
     elif metadata["modelType"] == EnumInferenceTypes.pyTorchRVCv2.value:
         net_g_onnx = SynthesizerTrnMsNSFsidM(*data["config"], 768, is_half=is_half)
     elif metadata["modelType"] == EnumInferenceTypes.pyTorchRVCv2Nono.value:
-        net_g_onnx = SynthesizerTrnMsNSFsidM(*data["config"], 768, is_half=is_half)
+        net_g_onnx = SynthesizerTrnMsNSFsidM_nono(*data["config"], 768, is_half=is_half)
     else:
         logger.error(f"Unknown model type: {metadata['modelType']}")
         return
@@ -127,6 +139,10 @@ def _export2onnx(input_model: str, output_model_simple: str, metadata: dict):
         "audio",
     ]
 
+    export_kwargs = {}
+    if "dynamo" in inspect.signature(torch.onnx.export).parameters:
+        export_kwargs["dynamo"] = False
+
     with BytesIO() as io:
         torch.onnx.export(
             net_g_onnx,
@@ -136,14 +152,17 @@ def _export2onnx(input_model: str, output_model_simple: str, metadata: dict):
                 "feats": [1],
                 "pitch": [1],
                 "pitchf": [1],
+            } if metadata["f0"] else {
+                "feats": [1],
             },
             do_constant_folding=True,
             opset_version=17,
             verbose=False,
             input_names=input_names,
             output_names=output_names,
+            **export_kwargs,
         )
-        onnx_model, _ = simplify(onnx.load_model_from_string(io.getvalue()))
+        onnx_model = _simplify_onnx(onnx.load_model_from_string(io.getvalue()))
 
     meta = onnx_model.metadata_props.add()
     meta.key = "metadata"

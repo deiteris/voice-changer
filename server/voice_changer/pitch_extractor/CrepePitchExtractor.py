@@ -9,8 +9,8 @@ class CrepePitchExtractor(PitchExtractor):
 
     def __init__(self, type: PitchExtractorType, file: str):
         super().__init__()
-        type, size = type.split('_')
         self.type: PitchExtractorType = type
+        _, size = type.split('_')
         self.model_size = size
         self.device = DeviceManager.get_instance().device
         load_model(self.device, file, size)

@@ -11,7 +11,7 @@ def load_model(device: torch.device, file: str, capacity: Literal['full', 'tiny'
 
     # Load weights
     torchcrepe.infer.model.load_state_dict(
-        torch.load(file, map_location=device if device.type == 'cuda' else 'cpu'))
+        torch.load(file, map_location=device if device.type == 'cuda' else 'cpu', weights_only=False))
 
     # Place on device
     torchcrepe.infer.model = torchcrepe.infer.model.to(device)

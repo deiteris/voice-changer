@@ -54,7 +54,7 @@ class RVCModelSlotGenerator(ModelSlotGenerator):
                 cpt['f0'] = int(cpt['f0'])
                 cpt['config'] = json.loads(cpt['config'])
         else:
-            cpt = torch.load(modelPath, map_location="cpu")
+            cpt = torch.load(modelPath, map_location="cpu", weights_only=False)
         config_len = len(cpt["config"])
         version = cpt.get("version", "v1")
 

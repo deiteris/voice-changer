@@ -57,8 +57,9 @@ async def download(params: dict):
 
     res = await s.head(url, allow_redirects=True)
     res.raise_for_status()
-    content_length = int(res.headers.get("content-length"))
-    if offset is not None and offset == content_length:
+    raw_head_len = res.headers.get("content-length")
+    content_length = int(raw_head_len) if raw_head_len is not None else None
+    if offset is not None and content_length is not None and offset == content_length:
         if expected_hash is not None and hash != expected_hash:
             raise DownloadVerificationException(saveTo, hash, expected_hash)
         # Hash will not be written here if file is absent or incomplete
@@ -67,7 +68,13 @@ async def download(params: dict):
     accept_ranges = res.headers.get("Accept-Ranges")
     # If file is incomplete and web-server supports byte ranges - resume the download
     # In case file size somehow exceeds reported content-length - redownload the file completely
-    resume_download = offset is not None and accept_ranges is not None and accept_ranges == 'bytes' and offset < content_length
+    resume_download = (
+        offset is not None
+        and content_length is not None
+        and accept_ranges is not None
+        and accept_ranges == 'bytes'
+        and offset < content_length
+    )
     if resume_download:
         res = await s.get(url, headers={ 'Range': f'bytes={offset}-' }, allow_redirects=True)
     else:
@@ -75,7 +82,8 @@ async def download(params: dict):
         hasher.reset()
         res = await s.get(url, allow_redirects=True)
     res.raise_for_status()
-    content_length = int(res.headers.get("content-length"))
+    raw_get_len = res.headers.get("content-length")
+    content_length = int(raw_get_len) if raw_get_len is not None else content_length
     progress_bar = tqdm(
         total=content_length,
         leave=False,

@@ -109,7 +109,7 @@ class RVCr2(VoiceChangerModel):
 
     def change_pitch_extractor(self):
         pitchExtractor = PitchExtractorManager.getPitchExtractor(
-            self.settings.f0Detector, self.settings.gpu
+            self.settings.f0Detector, False
         )
         self.pipeline.setPitchExtractor(pitchExtractor)
 
@@ -171,6 +171,7 @@ class RVCr2(VoiceChangerModel):
         logger.info(f'Allocated convert buffer size: {convert_size_16k}')
         logger.info(f'Allocated pitchf buffer size: {self.convert_feature_size_16k + 1}')
 
+    @torch.no_grad()
     def convert(self, audio_in: AudioInOutFloat, sample_rate: int) -> torch.Tensor:
         if self.pipeline is None:
             raise PipelineNotInitializedException()
@@ -180,13 +181,13 @@ class RVCr2(VoiceChangerModel):
         if self.is_half:
             audio_in_t = audio_in_t.half()
 
-        convert_feature_size_16k = audio_in_t.shape[0] // WINDOW_SIZE
-
         audio_in_16k = tat.Resample(
             orig_freq=sample_rate,
             new_freq=HUBERT_SAMPLE_RATE,
             dtype=self.dtype
         ).to(self.device_manager.device)(audio_in_t)
+
+        convert_feature_size_16k = audio_in_16k.shape[0] // WINDOW_SIZE
 
         vol_t = torch.sqrt(
             torch.square(audio_in_16k).mean()
@@ -211,7 +212,7 @@ class RVCr2(VoiceChangerModel):
 
         # TODO: Need to handle resampling for individual files
         # FIXME: Why the heck does it require another sqrt to amplify the volume?
-        audio_out: torch.Tensor = self.resampler_out(audio_model * torch.sqrt(vol_t))
+        audio_out: torch.Tensor = self.resampler_out((audio_model * torch.sqrt(vol_t)).float())
 
         return audio_out
 

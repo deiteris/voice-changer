@@ -9,6 +9,7 @@ from data.ModelSlot import ModelSlot, RVCModelSlot
 import logging
 from voice_changer.ModelSlotManager import ModelSlotManager
 from voice_changer.RVC.RVCModelSlotGenerator import RVCModelSlotGenerator
+from voice_changer.common.SafetensorsUtils import convert_single
 from downloader.Downloader import download
 
 logger = logging.getLogger(__name__)
@@ -25,15 +26,19 @@ async def downloadInitialSamples(mode: RVCSampleMode, model_dir: str):
 
 
 async def downloadSample(mode: RVCSampleMode, modelId: str, model_dir: str, slotIndex: int, params: Any):
-    sampleJsonUrls, _sampleModels = getSampleJsonAndModelIds(mode)
+    effective_mode: RVCSampleMode = mode if mode else "production"
+    sampleJsonUrls, _sampleModels = getSampleJsonAndModelIds(effective_mode)
     sampleJsons = _generateSampleJsons(sampleJsonUrls)
+    if any(not os.path.exists(f) for f in sampleJsons):
+        sampleJsons = await _downloadSampleJsons(sampleJsonUrls)
     samples = _generateSampleList(sampleJsons)
     await _downloadSamples(samples, [(modelId, params)], model_dir, [slotIndex])
 
 
 def getSampleInfos(mode: RVCSampleMode):
-    sampleJsonUrls, _sampleModels = getSampleJsonAndModelIds(mode)
-    sampleJsons = _generateSampleJsons(sampleJsonUrls)
+    effective_mode: RVCSampleMode = mode if mode else "production"
+    sampleJsonUrls, _sampleModels = getSampleJsonAndModelIds(effective_mode)
+    sampleJsons = [f for f in _generateSampleJsons(sampleJsonUrls) if os.path.exists(f)]
     samples = _generateSampleList(sampleJsons)
     return samples
 
@@ -163,5 +168,9 @@ async def _downloadSamples(samples: list[ModelSamples], sampleModelIds: list[Tup
                 slotInfo = RVCModelSlotGenerator._setInfoByONNX(modelPath, slotInfo)
             else:
                 slotInfo = RVCModelSlotGenerator._setInfoByPytorch(modelPath, slotInfo)
+                if not modelPath.endswith(".safetensors"):
+                    convert_single(modelPath, True)
+                    filename, _ = os.path.splitext(os.path.basename(modelPath))
+                    slotInfo.modelFile = f"{filename}.safetensors"
 
             modelSlotManager.save_model_slot(targetSlotIndex, slotInfo)

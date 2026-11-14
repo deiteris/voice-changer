@@ -134,7 +134,7 @@ class Pipeline:
             circular_write(f0, pitchf)
         else:
             pitch = f0_coarse
-            pitchf = f0
+            pitchf = f0.to(self.dtype)
 
         return pitch.unsqueeze(0), pitchf.unsqueeze(0)
 

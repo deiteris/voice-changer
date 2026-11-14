@@ -25,7 +25,7 @@ class OnnxRVCInferencerNono(OnnxRVCInferencer):
         if feats.device.type == 'cuda':
             binding = self.model.io_binding()
 
-            binding.bind_input('feats', device_type='cuda', device_id=feats.device.index, element_type=self.fp_dtype_np, shape=tuple(feats.shape), buffer_ptr=feats.float().data_ptr())
+            binding.bind_input('feats', device_type='cuda', device_id=feats.device.index, element_type=self.fp_dtype_np, shape=tuple(feats.shape), buffer_ptr=feats.data_ptr())
             binding.bind_input('p_len', device_type='cuda', device_id=feats.device.index, element_type=np.int64, shape=tuple(pitch_length.shape), buffer_ptr=pitch_length.data_ptr())
             binding.bind_input('sid', device_type='cuda', device_id=feats.device.index, element_type=np.int64, shape=tuple(sid.shape), buffer_ptr=sid.data_ptr())
             binding.bind_cpu_input('skip_head', np.array(skip_head, dtype=np.int64))
@@ -41,7 +41,7 @@ class OnnxRVCInferencerNono(OnnxRVCInferencer):
             output = self.model.run(
                 ["audio"],
                 {
-                    "feats": feats.float().detach().cpu().numpy(),
+                    "feats": feats.detach().cpu().numpy(),
                     "p_len": pitch_length.detach().cpu().numpy(),
                     "sid": sid.detach().cpu().numpy(),
                     "skip_head": np.array(skip_head, dtype=np.int64),
@@ -53,6 +53,6 @@ class OnnxRVCInferencerNono(OnnxRVCInferencer):
 
         res = torch.as_tensor(output[0], dtype=self.fp_dtype_t, device=feats.device)
 
-        if self.inferencerTypeVersion == "v2.1" or self.inferencerTypeVersion == "v2.2" or self.inferencerTypeVersion == "v1.1":
+        if self.inferencerTypeVersion in ("2.1", "2.2", "1.1", "v2.1", "v2.2", "v1.1"):
             return res
         return torch.clip(res[0, 0], -1.0, 1.0)

@@ -1,11 +1,22 @@
 # Based on https://github.com/yxlllc/RMVPE/blob/main/export.py
-from onnxsim import simplify
+import inspect
 import onnx
 import torch
 from io import BytesIO
-import torch
 from torchfcpe.models_infer import spawn_model, spawn_wav2mel
 from torchfcpe.tools import DotDict
+
+try:
+    import onnxslim
+
+    def _simplify_onnx(model: onnx.ModelProto) -> onnx.ModelProto:
+        return onnxslim.slim(model) or model
+except ImportError:
+    from onnxsim import simplify
+
+    def _simplify_onnx(model: onnx.ModelProto) -> onnx.ModelProto:
+        simplified, _ = simplify(model)
+        return simplified
 
 class InferCFNaiveMelPE(torch.nn.Module):
     """Infer CFNaiveMelPE
@@ -44,7 +55,7 @@ def spawn_infer_model_from_pt(pt_path: str, is_half: bool = False, device: torch
         device (str): Device. Default: None.
         bundled_model (bool): Whether this model is bundled model, only used in spawn_bundled_infer_model.
     """
-    ckpt = torch.load(pt_path, map_location='cpu')
+    ckpt = torch.load(pt_path, map_location='cpu', weights_only=False)
     if bundled_model:
         ckpt['config_dict']['model']['conv_dropout'] = 0.0
         ckpt['config_dict']['model']['atten_dropout'] = 0.0
@@ -62,6 +73,10 @@ def spawn_infer_model_from_pt(pt_path: str, is_half: bool = False, device: torch
 
 
 def convert(pt_model: torch.nn.Module, input_names: list[str], inputs: tuple[torch.Tensor], output_names: list[str], dynamic_axes: dict) -> onnx.ModelProto:
+    export_kwargs = {}
+    if "dynamo" in inspect.signature(torch.onnx.export).parameters:
+        export_kwargs["dynamo"] = False
+
     with BytesIO() as io:
         torch.onnx.export(
             pt_model,
@@ -72,8 +87,9 @@ def convert(pt_model: torch.nn.Module, input_names: list[str], inputs: tuple[tor
             verbose=False,
             input_names=input_names,
             output_names=output_names,
+            **export_kwargs,
         )
-        model, _ = simplify(onnx.load_model_from_string(io.getvalue()))
+        model = _simplify_onnx(onnx.load_model_from_string(io.getvalue()))
     return model
 
 if __name__ == '__main__':

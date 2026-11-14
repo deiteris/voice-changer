@@ -43,6 +43,8 @@ class TextEncoder(nn.Module):
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
         if f0 == True:
             self.emb_pitch = nn.Embedding(256, hidden_channels)  # pitch 256
+        else:
+            self.emb_pitch = None
         self.encoder = attentions.Encoder(
             hidden_channels,
             filter_channels,
@@ -56,11 +58,11 @@ class TextEncoder(nn.Module):
     def forward(
         self,
         phone: torch.Tensor,
-        pitch: torch.Tensor,
+        pitch: Optional[torch.Tensor],
         lengths: torch.Tensor,
         skip_head: Optional[int] = None,
     ):
-        if pitch is None:
+        if pitch is None or self.emb_pitch is None:
             x = self.emb_phone(phone)
         else:
             x = self.emb_phone(phone) + self.emb_pitch(pitch)
@@ -248,6 +250,8 @@ class Generator(torch.nn.Module):
         if gin_channels != 0:
             self.cond = nn.Conv1d(gin_channels, upsample_initial_channel, 1)
 
+        self.lrelu_slope = modules.LRELU_SLOPE
+
     def forward(
         self,
         x: torch.Tensor,
@@ -260,16 +264,20 @@ class Generator(torch.nn.Module):
         if g is not None:
             x = x + self.cond(g)
 
-        for i in range(self.num_upsamples):
-            x = F.leaky_relu(x, modules.LRELU_SLOPE, inplace=True)
-            x = self.ups[i](x)
-            xs = None
-            for j in range(self.num_kernels):
-                if xs is None:
-                    xs = self.resblocks[i * self.num_kernels + j](x)
-                else:
-                    xs += self.resblocks[i * self.num_kernels + j](x)
-            x = xs / self.num_kernels
+        for i, ups in enumerate(self.ups):
+            if i < self.num_upsamples:
+                x = F.leaky_relu(x, self.lrelu_slope, inplace=True)
+                x = ups(x)
+                xs: Optional[torch.Tensor] = None
+                l = [i * self.num_kernels + j for j in range(self.num_kernels)]
+                for j, resblock in enumerate(self.resblocks):
+                    if j in l:
+                        if xs is None:
+                            xs = resblock(x)
+                        else:
+                            xs += resblock(x)
+                assert isinstance(xs, torch.Tensor)
+                x = xs / self.num_kernels
         x = F.leaky_relu(x, inplace=True)
         x = self.conv_post(x)
         x = torch.tanh(x)
@@ -583,7 +591,7 @@ class GeneratorNSF(torch.nn.Module):
                 ):
                     torch.nn.utils.remove_weight_norm(l)
         for l in self.resblocks:
-            for hook in self.resblocks._forward_pre_hooks.values():
+            for hook in l._forward_pre_hooks.values():
                 if (
                     hook.__module__ == "torch.nn.utils.weight_norm"
                     and hook.__class__.__name__ == "WeightNorm"
@@ -766,8 +774,9 @@ class SynthesizerTrnMsNSFsidM_nono(nn.Module):
             n_layers,
             kernel_size,
             float(p_dropout),
+            f0=False,
         )
-        self.dec = GeneratorNSF(
+        self.dec = Generator(
             inter_channels,
             resblock,
             resblock_kernel_sizes,
@@ -776,8 +785,6 @@ class SynthesizerTrnMsNSFsidM_nono(nn.Module):
             upsample_initial_channel,
             upsample_kernel_sizes,
             gin_channels=gin_channels,
-            sr=sr,
-            is_half=kwargs["is_half"],
         )
         self.enc_q = PosteriorEncoder(
             spec_channels,

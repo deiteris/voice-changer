@@ -49,7 +49,7 @@ def convert_file(
     discard_names: list[str] = [],
 ):
     metadata = {"format": "pt"}
-    data: dict = torch.load(pt_filename, map_location="cpu")
+    data: dict = torch.load(pt_filename, map_location="cpu", weights_only=False)
     for k, v in data.items():
         if k in ['weight', 'state_dict']:
             continue

@@ -44,7 +44,7 @@ def spawn_infer_model_from_pt(pt_path: str, is_half: bool = False, device: torch
         device (str): Device. Default: None.
         bundled_model (bool): Whether this model is bundled model, only used in spawn_bundled_infer_model.
     """
-    ckpt = torch.load(pt_path, map_location='cpu')
+    ckpt = torch.load(pt_path, map_location='cpu', weights_only=False)
     if bundled_model:
         ckpt['config_dict']['model']['conv_dropout'] = 0.0
         ckpt['config_dict']['model']['atten_dropout'] = 0.0

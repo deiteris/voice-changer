@@ -25,7 +25,7 @@ class RVCInferencerv2(Inferencer):
                 model = SynthesizerTrnMs768NSFsid(*config, is_half=is_half).to(dev)
                 load_model(model, cpt, strict=False)
         else:
-            cpt = torch.load(file, map_location=dev if dev.type == 'cuda' else 'cpu')
+            cpt = torch.load(file, map_location=dev if dev.type == 'cuda' else 'cpu', weights_only=False)
             model = SynthesizerTrnMs768NSFsid(*cpt["config"], is_half=is_half).to(dev)
             model.load_state_dict(cpt["weight"], strict=False)
         model = model.eval()
@@ -43,6 +43,7 @@ class RVCInferencerv2(Inferencer):
         self.model = model
         return self
 
+    @torch.no_grad()
     def infer(
         self,
         feats: torch.Tensor,

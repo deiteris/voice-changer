@@ -52,12 +52,12 @@ class FcpeOnnxPitchExtractor(PitchExtractor):
         sr: int,
         window: int,
     ) -> torch.Tensor:
-        mel = self.mel_extractor(audio.unsqueeze(0).float())
+        mel = self.mel_extractor(audio.unsqueeze(0).float()).contiguous()
 
         if audio.device.type == 'cuda':
             binding = self.onnx_session.io_binding()
 
-            binding.bind_input('mel', device_type='cuda', device_id=audio.device.index, element_type=self.fp_dtype_np, shape=tuple(mel.shape), buffer_ptr=mel.contiguous().data_ptr())
+            binding.bind_input('mel', device_type='cuda', device_id=audio.device.index, element_type=self.fp_dtype_np, shape=tuple(mel.shape), buffer_ptr=mel.data_ptr())
             binding.bind_cpu_input('threshold', self.threshold)
 
             binding.bind_output('pitchf', device_type='cuda', device_id=audio.device.index)

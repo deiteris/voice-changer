@@ -1,6 +1,9 @@
+import json
 import torch
+from safetensors import safe_open
 from const import EnumInferenceTypes
 
+from voice_changer.common.SafetensorsUtils import load_model
 from voice_changer.common.deviceManager.DeviceManager import DeviceManager
 from voice_changer.RVC.inferencer.Inferencer import Inferencer
 from voice_changer.RVC.inferencer.rvc_models.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM_nono
@@ -14,19 +17,25 @@ class WebUIInferencerNono(Inferencer):
         dev = device_manager.device
         is_half = device_manager.use_fp16()
 
-        cpt = torch.load(file, map_location="cpu")
-        model = SynthesizerTrnMsNSFsidM_nono(**cpt["params"], is_half=is_half)
+        if file.endswith('.safetensors'):
+            with safe_open(file, 'pt', device=str(dev) if dev.type == 'cuda' else 'cpu') as cpt:
+                params = json.loads(cpt.metadata()['params'])
+                model = SynthesizerTrnMsNSFsidM_nono(**params, is_half=is_half).to(dev)
+                load_model(model, cpt, strict=False)
+        else:
+            cpt = torch.load(file, map_location="cpu", weights_only=False)
+            model = SynthesizerTrnMsNSFsidM_nono(**cpt["params"], is_half=is_half)
+            model.load_state_dict(cpt["weight"], strict=False)
+            model = model.to(dev)
 
         model.eval()
-        model.load_state_dict(cpt["weight"], strict=False)
-
-        model = model.to(dev)
         if is_half:
             model = model.half()
 
         self.model = model
         return self
 
+    @torch.no_grad()
     def infer(
         self,
         feats: torch.Tensor,
@@ -38,13 +47,11 @@ class WebUIInferencerNono(Inferencer):
         return_length: int,
         formant_length: int,
     ) -> torch.Tensor:
-        res = self.model.infer(
+        return self.model(
             feats,
             pitch_length,
             sid,
-            skip_head=skip_head,
-            return_length=return_length,
-            formant_length=formant_length
+            skip_head,
+            return_length,
+            formant_length,
         )
-        res = res[0][0, 0]
-        return torch.clip(res, -1.0, 1.0)

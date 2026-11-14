@@ -2,7 +2,7 @@
     "name": "demo",
     "version": "1.0.0",
     "description": "",
-    "main": ".eslintrc.js",
+    "private": true,
     "scripts": {
         "clean": "rimraf dist/",
         "webpack:prod": "npx webpack --config webpack.prod.js",
@@ -10,9 +10,8 @@
         "build:prod": "npm-run-all clean webpack:prod",
         "build:dev": "npm-run-all clean webpack:dev",
         "start": "webpack-dev-server  --config webpack.dev.js",
-        "build:mod": "cd ../lib && npm run build:dev && cd - && cp -r ../lib/dist/* node_modules/@dannadori/voice-changer-client-js/dist/",
-        "build:mod_dos": "cd ../lib && npm run build:dev && cd ../demo && npm-run-all build:mod_copy",
-        "build:mod_copy": "XCOPY ..\\lib\\dist\\* .\\node_modules\\@dannadori\\voice-changer-client-js\\dist\\* /s /e /h /y",
+        "build:mod": "cd ../lib && npm run build:dev && cd ../demo && npm run build:mod_copy",
+        "build:mod_copy": "node -e \"require('fs').cpSync('../lib/dist', 'node_modules/@dannadori/voice-changer-client-js/dist', { recursive: true, force: true })\"",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [
@@ -26,7 +25,7 @@
         "@babel/preset-env": "^7.23.5",
         "@babel/preset-react": "^7.23.3",
         "@babel/preset-typescript": "^7.23.3",
-        "@types/node": "^20.10.2",
+        "@types/node": "^24.0.0",
         "@types/react": "^18.2.40",
         "@types/react-dom": "^18.2.17",
         "autoprefixer": "^10.4.16",
@@ -46,14 +45,14 @@
         "prettier": "^3.1.0",
         "rimraf": "^5.0.5",
         "style-loader": "^3.3.3",
-        "ts-loader": "^9.5.1",
-        "tsconfig-paths": "^4.2.0",
         "typescript": "^5.3.2",
         "webpack": "^5.89.0",
         "webpack-cli": "^5.1.4",
-        "webpack-dev-server": "^4.15.1"
+        "webpack-dev-server": "^4.15.1",
+        "webpack-merge": "^5.10.0"
     },
     "dependencies": {
+        "@babel/runtime": "^7.23.5",
         "@dannadori/voice-changer-client-js": "1.0.180",
         "@dannadori/worker-manager": "^1.0.20",
         "@fortawesome/fontawesome-svg-core": "^6.5.1",
@@ -61,6 +60,7 @@
         "@fortawesome/free-regular-svg-icons": "^6.5.1",
         "@fortawesome/free-solid-svg-icons": "^6.5.1",
         "@fortawesome/react-fontawesome": "^0.2.0",
+        "buffer": "^6.0.3",
         "chart.js": "^4.4.3",
         "react": "^18.2.0",
         "react-chartjs-2": "^5.2.0",
