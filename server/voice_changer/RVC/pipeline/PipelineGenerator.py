@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def createPipeline(modelSlot: RVCModelSlot, f0Detector: str, useONNX: bool, force_reload: bool):
     model_dir = get_settings().model_dir
     # Inferencer 生成
-    if useONNX:
+    if useONNX and not modelSlot.isONNX:
         modelPath = os.path.join(model_dir, str(modelSlot.slotIndex), os.path.basename(modelSlot.modelFileOnnx))
         inferencer = InferencerManager.getInferencer(modelSlot.modelTypeOnnx, modelPath)
     else:

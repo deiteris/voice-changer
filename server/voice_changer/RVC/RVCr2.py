@@ -63,7 +63,7 @@ class RVCr2(VoiceChangerModel):
     def initialize(self, force_reload: bool = False):
         logger.info("Initializing...")
 
-        if self.settings.useONNX and not self.slotInfo.modelFileOnnx:
+        if self.settings.useONNX and not self.slotInfo.isONNX and not self.slotInfo.modelFileOnnx:
             self.export2onnx()
 
         # pipelineの生成
