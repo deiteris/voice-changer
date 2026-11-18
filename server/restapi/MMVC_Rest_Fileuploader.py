@@ -48,6 +48,8 @@ class MMVC_Rest_Fileuploader:
             info = self.voiceChangerManager.update_settings(key, val)
             json_compatible_item_data = jsonable_encoder(info)
             return JSONResponse(content=json_compatible_item_data)
+        except ValueError as e:
+            return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
         except Exception as e:
             logger.exception(e)
 

@@ -144,6 +144,7 @@ class ServerAudio:
 
     def stop(self):
         self.running = False
+        self.settings.serverAudioStated = 0
         if self.stream is not None:
             self.stream.close()
             self.stream = None
@@ -164,6 +165,9 @@ class ServerAudio:
         serverInputAudioDevice = self.getServerInputAudioDevice(self.settings.serverInputDeviceId)
         serverOutputAudioDevice = self.getServerOutputAudioDevice(self.settings.serverOutputDeviceId)
         serverMonitorAudioDevice = self.getServerOutputAudioDevice(self.settings.serverMonitorDeviceId)
+
+        if serverInputAudioDevice is None or serverOutputAudioDevice is None:
+            raise ValueError("The selected input or output device is unavailable.")
 
         # Generate ExtraSetting
         wasapiExclusiveMode = bool(self.settings.exclusiveMode)
@@ -194,11 +198,6 @@ class ServerAudio:
         logger.info(f"  [Monitor]: {serverMonitorAudioDevice}, {monitorExtraSetting}")
 
         # Deviceがなかったらいったんスリープ
-        if serverInputAudioDevice is None or serverOutputAudioDevice is None:
-            logger.error("Input or output device is not selected.")
-            self.callbacks.emit_to(0, self.performance, ('ERR_GENERIC_SERVER_AUDIO_ERROR', ERR_GENERIC_SERVER_AUDIO_ERROR))
-            return
-
         # サンプリングレート
         # 同一サンプリングレートに統一（変換時にサンプルが不足する場合があるため。パディング方法が明らかになれば、それぞれ設定できるかも）
         self.settings.serverInputAudioSampleRate = self.settings.serverAudioSampleRate
@@ -235,13 +234,7 @@ class ServerAudio:
                         if checkSamplingRate(self.settings.serverMonitorDeviceId, sr, "output"):
                             availableMonitorSampleRate.append(sr)
                 err = ERR_SAMPLE_RATE_NOT_SUPPORTED % (availableInputSampleRate, availableOutputSampleRate, availableMonitorSampleRate)
-                self.callbacks.emit_to(
-                    0,
-                    self.performance,
-                    ('ERR_SAMPLE_RATE_NOT_SUPPORTED', err)
-                )
-                logger.error(err)
-                return
+                raise ValueError(err)
 
         # FIXME: In UI, block size is calculated based on 48kHz so we convert from 48kHz to input device sample rate.
         block_frame = int((self.settings.serverReadChunkSize * 128 / 48000) * self.settings.serverInputAudioSampleRate)
@@ -252,9 +245,11 @@ class ServerAudio:
             else:
                 self.run_with_monitor(block_frame, inputChannels, outputChannels, serverMonitorAudioDevice.maxOutputChannels, inputExtraSetting, outputExtraSetting, monitorExtraSetting)
             self.running = True
-        except Exception as e:
-            self.callbacks.emit_to(0, self.performance, ('ERR_GENERIC_SERVER_AUDIO_ERROR', ERR_GENERIC_SERVER_AUDIO_ERROR))
-            logger.exception(e)
+            self.settings.serverAudioStated = 1
+        except Exception as exc:
+            self.stop()
+            logger.exception("Failed to start server audio")
+            raise ValueError(ERR_GENERIC_SERVER_AUDIO_ERROR) from exc
 
     ###########################################
     # Info Section

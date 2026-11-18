@@ -41,20 +41,16 @@ export class ServerRestClient {
         return info;
     };
 
-    updateSettings = async (key: ServerSettingKey, val: string) => {
-        const url = this.serverUrl + "/update_settings";
-        const info = await new Promise<ServerInfo>(async (resolve) => {
-            const formData = new FormData();
-            formData.append("key", key);
-            formData.append("val", val);
-            const request = new Request(url, {
-                method: "POST",
-                body: formData,
-            });
-            const res = (await (await fetch(request)).json()) as ServerInfo;
-            resolve(res);
-        });
-        return info;
+    updateSettings = async (key: ServerSettingKey, val: string): Promise<ServerInfo> => {
+        const formData = new FormData();
+        formData.append("key", key);
+        formData.append("val", val);
+        const response = await fetch(this.serverUrl + "/update_settings", { method: "POST", body: formData });
+        const body = await response.json();
+        if (!response.ok) {
+            throw new Error(body.message || `Request failed (${response.status})`);
+        }
+        return body as ServerInfo;
     };
 
     uploadFile2 = async (dir: string, file: File, onprogress: (progress: number, end: boolean) => void) =>

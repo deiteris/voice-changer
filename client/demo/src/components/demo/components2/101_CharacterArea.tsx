@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAppState } from "../../../001_provider/001_AppStateProvider";
 import { useGuiState } from "../001_GuiStateProvider";
 import { useMessageBuilder } from "../../../hooks/useMessageBuilder";
@@ -52,7 +52,25 @@ export const CharacterArea = (_props: CharacterAreaProps) => {
         );
     }, [selected]);
 
+    const serverAudioRequestPending = useRef(false);
+    useEffect(() => {
+        if (serverSetting.serverSetting.enableServerAudio) {
+            guiState.setIsConverting(Boolean(serverSetting.serverSetting.serverAudioStated));
+        }
+    }, [serverSetting.serverSetting.enableServerAudio, serverSetting.serverSetting.serverAudioStated]);
+
     const startControl = useMemo(() => {
+        const setServerAudioRunning = async (running: boolean) => {
+            if (serverAudioRequestPending.current) return;
+            serverAudioRequestPending.current = true;
+            try {
+                await serverSetting.updateServerSettings({ ...serverSetting.serverSetting, serverAudioStated: Number(running) });
+            } catch (error) {
+                toast.error(error instanceof Error ? error.message : String(error));
+            } finally {
+                serverAudioRequestPending.current = false;
+            }
+        };
         const onStartClicked = async () => {
             if (serverSetting.serverSetting.modelSlotIndex === -1) {
                 toast.warn('Select a voice model first.')
@@ -92,8 +110,7 @@ export const CharacterArea = (_props: CharacterAreaProps) => {
                     toast.warn('Select an audio output device.')
                     return
                 }
-                serverSetting.updateServerSettings({ ...serverSetting.serverSetting, serverAudioStated: 1 });
-                guiState.setIsConverting(true);
+                await setServerAudioRunning(true);
             }
         };
         const onStopClicked = async () => {
@@ -101,8 +118,7 @@ export const CharacterArea = (_props: CharacterAreaProps) => {
                 guiState.setIsConverting(false);
                 await stop();
             } else {
-                guiState.setIsConverting(false);
-                serverSetting.updateServerSettings({ ...serverSetting.serverSetting, serverAudioStated: 0 });
+                await setServerAudioRunning(false);
             }
         };
         const onPassThroughClicked = async () => {
