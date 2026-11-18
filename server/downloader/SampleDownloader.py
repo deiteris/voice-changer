@@ -16,6 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 async def downloadInitialSamples(mode: RVCSampleMode, model_dir: str):
+    if not mode:
+        catalog_urls, _ = getSampleJsonAndModelIds("production")
+        await _downloadSampleJsons(catalog_urls)
+        return
+
     sampleJsonUrls, sampleModels = getSampleJsonAndModelIds(mode)
     if not sampleModels:
         return
