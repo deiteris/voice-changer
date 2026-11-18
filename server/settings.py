@@ -22,7 +22,7 @@ class ServerSettings(BaseSettings):
     rmvpe_onnx: str = 'pretrain/rmvpe.onnx'
     fcpe: str = 'pretrain/fcpe.pt'
     fcpe_onnx: str = 'pretrain/fcpe.onnx'
-    host: str = '127.0.0.1'
+    host: Literal['127.0.0.1', 'localhost'] = '127.0.0.1'
     port: int = 18888
     allowed_origins: Literal['*'] | list[str] = []
     edition: str = get_edition()

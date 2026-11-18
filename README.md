@@ -376,6 +376,8 @@ python ./main.py
 
 This will run the server with default settings. Note that it will not open the web browser by default, copy the address from command line.
 
+The server listens on loopback. For remote use, put it behind an authenticated reverse proxy or use the notebook’s authenticated tunnel. Remove any non-loopback `HOST` setting from your environment or `.env`, point the proxy upstream at `127.0.0.1:18888` (or your configured port), and set the public browser origin in `ALLOWED_ORIGINS`.
+
 ### Building a package
 
 1. [If not installed] Install `pyinstaller` with the following command:
