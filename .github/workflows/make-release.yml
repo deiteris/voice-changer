@@ -115,6 +115,9 @@ jobs:
     - name: Installing project dependencies
       run: python -m pip install --no-cache-dir -r requirements-common.txt -r requirements-${{ matrix.reqs }}.txt
       working-directory: ./server
+    - name: Install PortAudio on Linux
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y libportaudio2
     - name: Building executable
       run: pyinstaller --clean -y --dist ./dist --workpath /tmp MMVCServerSIO.spec
       working-directory: ./server
@@ -127,6 +130,9 @@ jobs:
       shell: bash
       if: matrix.os == 'ubuntu-22.04' && matrix.backend == 'cuda'
       working-directory: ./server/dist/MMVCServerSIO/_internal
+    - name: Check packaged startup
+      working-directory: ./server
+      run: python tests/smoke_packaged_startup.py dist/MMVCServerSIO
     - name: Pack artifact
       shell: bash
       run: |

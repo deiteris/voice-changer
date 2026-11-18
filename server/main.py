@@ -42,6 +42,8 @@ def setupArgParser():
     parser.add_argument("--https-cert", type=str, default="ssl.cert", help="path for the cert of https")
     parser.add_argument("--https-self-signed", type=strtobool, default=True, help="generate self-signed certificate")
 
+    parser.add_argument("--skip-downloads", action="store_true", help="Use only local startup assets.")
+
     return parser
 
 def check_port(port) -> int:
@@ -87,13 +89,14 @@ async def main(args):
     logger.info(f"Voice changer version: {get_version()} {get_edition()}")
     # ダウンロード(Weight)
 
-    await downloadWeight(settings)
+    if not args.skip_downloads:
+        await downloadWeight(settings)
 
-    try:
-        await downloadInitialSamples(settings.sample_mode, settings.model_dir)
-    except Exception as e:
-        logger.error(f"Failed to download samples.")
-        logger.exception(e)
+        try:
+            await downloadInitialSamples(settings.sample_mode, settings.model_dir)
+        except Exception as e:
+            logger.error(f"Failed to download samples.")
+            logger.exception(e)
 
     # FIXME: Need to refactor samples download logic
     os.makedirs(settings.model_dir, exist_ok=True)
