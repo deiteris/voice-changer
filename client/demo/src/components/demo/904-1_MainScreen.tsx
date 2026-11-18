@@ -5,7 +5,8 @@ import { RVCModelSlot, fileSelector } from "@dannadori/voice-changer-client-js";
 import { useMessageBuilder } from "../../hooks/useMessageBuilder";
 import { ModelSlotManagerDialogScreen } from "./904_ModelSlotManagerDialog";
 import { checkExtention, trimfileName } from "../../utils/utils";
-import { MODEL_ICON_BLANK_URL } from "../../const";
+import { faWaveSquare } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 export type MainScreenProps = {
     screen: ModelSlotManagerDialogScreen;
@@ -28,6 +29,7 @@ export const MainScreen = (props: MainScreenProps) => {
         messageBuilderState.setMessage(__filename, "upload", { ja: "アップロード", en: "upload" });
         messageBuilderState.setMessage(__filename, "edit", { ja: "編集", en: "edit" });
         messageBuilderState.setMessage(__filename, "close", { ja: "閉じる", en: "close" });
+        messageBuilderState.setMessage(__filename, "empty_slot", { ja: "空きスロット", en: "Empty slot" });
     }, []);
 
     const screen = useMemo(() => {
@@ -48,7 +50,11 @@ export const MainScreen = (props: MainScreenProps) => {
                 alert(`サムネイルの拡張子は".png", ".jpg", ".jpeg", ".gif"である必要があります。`);
                 return;
             }
-            await serverSetting.uploadAssets(index, "iconFile", file);
+            try {
+                await serverSetting.uploadAssets(index, "iconFile", file);
+            } catch (error) {
+                alert(error instanceof Error ? error.message : String(error));
+            }
         };
 
         const nameValueAction = async (index: number) => {
@@ -84,14 +90,14 @@ export const MainScreen = (props: MainScreenProps) => {
             <div className="body-row split-3-4-3 left-padding-1">
                 <div className="body-item-text"></div>
                 <div className="body-button-container body-button-container-space-around">
-                    <div
+                    <button type="button"
                         className="body-button"
                         onClick={() => {
                             props.close();
                         }}
                     >
                         {messageBuilderState.getMessage(__filename, "close")}
-                    </div>
+                    </button>
                 </div>
                 <div className="body-item-text"></div>
             </div>
@@ -99,31 +105,31 @@ export const MainScreen = (props: MainScreenProps) => {
 
         const slotRow = serverSetting.serverSetting.modelSlots.map((x, index) => {
             // モデルのアイコン
-            const generateIconArea = (slotIndex: number, iconUrl: string | null, tooltip: boolean) => {
-                let realIconUrl = MODEL_ICON_BLANK_URL;
-                if (iconUrl) {
-                    realIconUrl = iconUrl.length > 0 ? serverSetting.serverSetting.voiceChangerParams.model_dir + "/" + slotIndex + "/" + iconUrl.split(/[\/\\]/).pop() : "/assets/icons/noimage.png";
-                }
-                const iconDivClass = tooltip ? "tooltip" : "";
-                const iconClass = tooltip ? "model-slot-icon-pointable" : "model-slot-icon";
+            const generateIconArea = (slotIndex: number, iconUrl: string | null, canChangeIcon: boolean) => {
+                const artwork = iconUrl ? (
+                    <img src={`${serverSetting.serverSetting.voiceChangerParams.model_dir}/${slotIndex}/${iconUrl.split(/[\/\\]/).pop()}`} className="model-slot-icon" alt="" />
+                ) : (
+                    <span className="model-slot-icon studio-slot-placeholder" aria-hidden="true"><FontAwesomeIcon icon={faWaveSquare} /></span>
+                );
+                if (!canChangeIcon) return artwork;
+
                 return (
-                    <div className={iconDivClass}>
-                        <img
-                            src={realIconUrl}
-                            className={iconClass}
-                            onClick={() => {
-                                iconAction(slotIndex);
-                            }}
-                        />
-                        <div className="tooltip-text tooltip-text-thin tooltip-text-lower">{messageBuilderState.getMessage(__filename, "change_icon")}</div>
-                    </div>
+                    <button
+                        type="button"
+                        className="studio-slot-icon-button"
+                        title={messageBuilderState.getMessage(__filename, "change_icon")}
+                        aria-label={`${messageBuilderState.getMessage(__filename, "change_icon")} (${slotIndex})`}
+                        onClick={() => iconAction(slotIndex)}
+                    >
+                        {artwork}
+                    </button>
                 );
             };
 
             // モデルの名前
             const generateNameRow = (slotIndex: number, name: string, termsOfUseUrl: string) => {
                 const nameValueClass = name.length > 0 ? "model-slot-detail-row-value-pointable tooltip" : "model-slot-detail-row-value";
-                const displayName = name.length > 0 ? name : "blank";
+                const displayName = name || messageBuilderState.getMessage(__filename, "empty_slot");
                 const termOfUseUrlLink =
                     termsOfUseUrl.length > 0 ? (
                         <a href={termsOfUseUrl} target="_blank" rel="noopener noreferrer" className="body-item-text-small">
@@ -204,30 +210,30 @@ export const MainScreen = (props: MainScreenProps) => {
                         {infoRow}
                     </div>
                     <div className="model-slot-buttons">
-                        <div
+                        <button type="button"
                             className="model-slot-button"
                             onClick={() => {
                                 props.openFileUploader(index);
                             }}
                         >
                             {messageBuilderState.getMessage(__filename, "upload")}
-                        </div>
-                        <div
+                        </button>
+                        <button type="button"
                             className="model-slot-button"
                             onClick={() => {
                                 props.openSampleDownloader(index);
                             }}
                         >
                             {messageBuilderState.getMessage(__filename, "sample")}
-                        </div>
-                        <div
+                        </button>
+                        <button type="button"
                             className="model-slot-button"
                             onClick={() => {
                                 props.openEditor(index);
                             }}
                         >
                             {messageBuilderState.getMessage(__filename, "edit")}
-                        </div>
+                        </button>
                     </div>
                 </div>
             );
@@ -235,7 +241,7 @@ export const MainScreen = (props: MainScreenProps) => {
 
         return (
             <div className="dialog-frame">
-                <div className="dialog-title">Model Slot Configuration</div>
+                <h2 className="dialog-title">Manage models</h2>
                 <div className="dialog-fixed-size-content">
                     <div className="model-slot-container">{slotRow}</div>
                     {closeButtonRow}

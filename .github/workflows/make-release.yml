@@ -60,7 +60,7 @@ jobs:
           reqs: dml
           backend: dml
           python-version: '3.12'
-        - os: macos-13
+        - os: macos-15-intel
           os_suffix: macos-amd64
           reqs: cpu
           backend: cpu
@@ -79,8 +79,7 @@ jobs:
           os_suffix: linux-amd64
           reqs: cuda
           backend: cuda
-          # Linux CUDA depends on faiss-gpu-cp310
-          python-version: '3.10'
+          python-version: '3.12'
         - os: ubuntu-22.04
           os_suffix: linux-amd64
           reqs: rocm
@@ -104,6 +103,24 @@ jobs:
         # remove-large-packages: 'true'
         remove-haskell: 'true'
     - uses: actions/checkout@v4
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Install and build client library
+      working-directory: ./client/lib
+      run: |
+        npm ci
+        npm test
+        npm run typecheck
+        npm run build:prod
+    - name: Install and build client demo
+      working-directory: ./client/demo
+      run: |
+        npm ci
+        npm run build:mod_copy
+        npm run typecheck
+        npm run build:prod
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -115,6 +132,14 @@ jobs:
     - name: Installing project dependencies
       run: python -m pip install --no-cache-dir -r requirements-common.txt -r requirements-${{ matrix.reqs }}.txt
       working-directory: ./server
+    - name: Check inference dependencies
+      working-directory: ./server
+      shell: bash
+      run: |
+        python -c "import numpy as np, torch, faiss, onnxruntime; assert torch.from_numpy(np.zeros(1, dtype=np.float32)).numpy().shape == (1,); print('Inference dependencies imported')"
+        if [ "$RUNNER_OS" = "Linux" ] && [ "$BACKEND" = "cuda" ]; then
+          python -c "import torch, faiss; assert hasattr(faiss, 'StandardGpuResources')"
+        fi
     - name: Install PortAudio on Linux
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y libportaudio2
@@ -126,7 +151,7 @@ jobs:
       shell: bash
       if: matrix.os == 'windows-latest' && matrix.backend == 'cuda'
     - name: Add CUDA library symlinks
-      run: ln -svf nvidia/*/lib/*.so* .
+      run: ln -svf nvidia/cu13/lib/*.so* .
       shell: bash
       if: matrix.os == 'ubuntu-22.04' && matrix.backend == 'cuda'
       working-directory: ./server/dist/MMVCServerSIO/_internal

@@ -18,7 +18,7 @@ except ImportError:
 import safetensors
 from const import EnumInferenceTypes
 from data.ModelSlot import RVCModelSlot
-from voice_changer.common.SafetensorsUtils import load_model
+from voice_changer.common.SafetensorsUtils import load_model, load_rvc_checkpoint
 from voice_changer.common.deviceManager.DeviceManager import DeviceManager
 from voice_changer.RVC.inferencer.rvc_models.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM, SynthesizerTrnMsNSFsidM_nono  # type: ignore
 from settings import get_settings
@@ -68,7 +68,7 @@ def _export2onnx(input_model: str, output_model_simple: str, metadata: dict):
             'params': json.loads(m.get('params', '{}'))
         }
     else:
-        cpt = torch.load(input_model, map_location=dev, weights_only=False)
+        cpt = load_rvc_checkpoint(input_model, map_location=dev)
         data = {
             'config': cpt['config'],
             'params': cpt.get('params') or {}

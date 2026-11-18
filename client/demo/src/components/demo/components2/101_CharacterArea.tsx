@@ -8,6 +8,8 @@ import { SpeakerArea } from "./101-3_SpeakerArea";
 import { FormantShiftArea } from "./101-4_FormantShiftArea";
 import { Portrait } from "./101-0_Portrait";
 import { toast } from "react-toastify";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlay, faStop } from "@fortawesome/free-solid-svg-icons";
 
 export type CharacterAreaProps = {};
 
@@ -42,14 +44,7 @@ export const CharacterArea = (_props: CharacterAreaProps) => {
             return <></>;
         }
         return (
-            <div className="character-area-control">
-                <div className="character-area-control-title">Name:</div>
-                <div className="character-area-control-field">
-                    <div className="character-area-text">
-                        {selected.name}
-                    </div>
-                </div>
-            </div>
+            <h3 className="studio-model-name">{selected.name}</h3>
         );
     }, [selected]);
 
@@ -143,24 +138,17 @@ export const CharacterArea = (_props: CharacterAreaProps) => {
                 serverSetting.updateServerSettings({ ...serverSetting.serverSetting, passThrough: false });
             }
         };
-        const startClassName = guiState.isConverting ? "character-area-control-button-active" : "character-area-control-button-stanby";
-        const stopClassName = guiState.isConverting ? "character-area-control-button-stanby" : "character-area-control-button-active";
-        const passThruClassName = serverSetting.serverSetting.passThrough == false ? "character-area-control-passthru-button-stanby" : "character-area-control-passthru-button-active blinking";
-
         return (
-            <div className="character-area-control">
-                <div className="character-area-control-buttons">
-                    <div onClick={onStartClicked} className={startClassName}>
-                        start
-                    </div>
-                    <div onClick={onStopClicked} className={stopClassName}>
-                        stop
-                    </div>
-
-                    <div onClick={onPassThroughClicked} className={passThruClassName}>
-                        passthru
-                    </div>
-                </div>
+            <div className="studio-transport">
+                <button type="button" className="studio-button studio-primary-button" onClick={onStartClicked} disabled={guiState.isConverting}>
+                    <FontAwesomeIcon icon={faPlay} /> Start
+                </button>
+                <button type="button" className="studio-button" onClick={onStopClicked} disabled={!guiState.isConverting}>
+                    <FontAwesomeIcon icon={faStop} /> Stop
+                </button>
+                <button type="button" className="studio-button" aria-pressed={Boolean(serverSetting.serverSetting.passThrough)} onClick={onPassThroughClicked}>
+                    Pass-through
+                </button>
             </div>
         );
     }, [guiState.isConverting, setting.voiceChangerClientSetting.audioInput, guiState.audioOutputForGUI, start, stop, serverSetting.serverSetting, serverSetting.updateServerSettings]);
@@ -267,9 +255,9 @@ export const CharacterArea = (_props: CharacterAreaProps) => {
             <div className="character-area-control" style={{ margin: "0 auto" }}>
                 <div className="character-area-control-field">
                     <div className="character-area-buttons">
-                        <div className="character-area-button" onClick={onUpdateDefaultClicked}>
+                        <button type="button" className="studio-button" onClick={onUpdateDefaultClicked}>
                             {messageBuilderState.getMessage(__filename, "save_default")}
-                        </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -289,12 +277,20 @@ export const CharacterArea = (_props: CharacterAreaProps) => {
                 {modelSlotControl}
             </div>
         )
-    }, [startControl, gainControl, modelSlotControl])
+    }, [nameArea, startControl, gainControl, modelSlotControl])
 
     return (
-        <div className="character-area">
-            <Portrait></Portrait>
-            {characterControlArea}
-        </div>
+        <section className="studio-session" aria-labelledby="studio-session-heading">
+            <div className="studio-section-heading">
+                <h2 id="studio-session-heading">Live conversion</h2>
+                <span className="studio-session-state" data-live={guiState.isConverting} role="status">
+                    {guiState.isConverting ? "Converting" : "Idle"}
+                </span>
+            </div>
+            <div className="character-area">
+                <Portrait />
+                {characterControlArea}
+            </div>
+        </section>
     );
 };

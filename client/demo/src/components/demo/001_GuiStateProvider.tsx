@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState, useRef } from "react";
 import { ReactNode } from "react";
 import { useAppRoot } from "../../001_provider/001_AppRootProvider";
 import { StateControlCheckbox, useStateControlCheckbox } from "../../hooks/useStateControlCheckbox";
-import { useAppState } from "../../001_provider/001_AppStateProvider";
 
 export const OpenServerControlCheckbox = "open-server-control-checkbox";
 export const OpenModelSettingCheckbox = "open-model-setting-checkbox";

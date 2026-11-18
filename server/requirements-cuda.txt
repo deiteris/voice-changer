@@ -8,7 +8,7 @@
 torch==2.15.0+cu134
 torchaudio==2.11.1+cu134
 faiss-cpu>=1.12.0; sys_platform!='linux'
-faiss-gpu; sys_platform=='linux'
+faiss-gpu==1.16.0; sys_platform=='linux'
 
 onnx
 onnxscript

@@ -1,7 +1,12 @@
 import json
+import asyncio
+import threading
+from concurrent.futures import ThreadPoolExecutor
 import os
 import sys
 import shutil
+import tempfile
+from pathlib import Path
 import numpy as np
 from downloader.SampleDownloader import downloadSample, getSampleInfos
 import logging
@@ -54,6 +59,9 @@ class VoiceChangerManager(ServerAudioCallbacks):
         self._browser_stream: str | None = None
         self._last_browser_audio = 0.0
         self._audio_source = None
+        self._model_load_lock = asyncio.Lock()
+        self._settings_lock = threading.Lock()
+        self._inference_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="voice-inference")
 
         self.modelSlotManager = ModelSlotManager.get_instance(self.params.model_dir)
         # スタティックな情報を収集
@@ -79,8 +87,16 @@ class VoiceChangerManager(ServerAudioCallbacks):
         self.initialize(self.settings.modelSlotIndex)
 
     def store_setting(self):
-        with open(STORED_SETTING_FILE, "w") as f:
-            json.dump(self.settings.to_dict_stateless(), f)
+        temp_path = None
+        try:
+            directory = os.path.dirname(os.path.abspath(STORED_SETTING_FILE))
+            with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=directory, delete=False) as f:
+                temp_path = f.name
+                json.dump(self.settings.to_dict_stateless(), f)
+            os.replace(temp_path, STORED_SETTING_FILE)
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                os.remove(temp_path)
 
     @classmethod
     def get_instance(cls):
@@ -89,47 +105,96 @@ class VoiceChangerManager(ServerAudioCallbacks):
         return cls._instance
 
     async def load_model(self, params: LoadModelParams):
-        if params.isSampleMode:
-            # サンプルダウンロード
-            logger.info(f"Sample download.... {params}")
-            await downloadSample(self.params.sample_mode, params.sampleId, self.params.model_dir, params.slot, params.params)
-            self.modelSlotManager.getAllSlotInfo(reload=True)
-            if params.slot == self.settings.modelSlotIndex:
-                self.initialize(params.slot)
-            info = {"status": "OK"}
-            return info
+        async with self._model_load_lock:
+            return await self._load_model(params)
 
-        # アップローダ
-        # ファイルをslotにコピー
-        slotDir = os.path.join(
-            self.params.model_dir,
-            str(params.slot),
-        )
-        if os.path.isdir(slotDir):
-            shutil.rmtree(slotDir)
+    async def _load_model(self, params: LoadModelParams):
+        if type(params.slot) is not int or not 0 <= params.slot < len(self.modelSlotManager.getAllSlotInfo()):
+            raise ValueError("Invalid model slot")
+        if params.voiceChangerType != "RVC":
+            raise ValueError("Unsupported voice changer type")
 
-        for file in params.files:
-            logger.info(f"FILE: {file}")
-            srcPath = os.path.join(UPLOAD_DIR, file.dir, file.name)
-            dstDir = os.path.join(
-                self.params.model_dir,
-                str(params.slot),
-                file.dir,
-            )
-            dstPath = os.path.join(dstDir, file.name)
-            os.makedirs(dstDir, exist_ok=True)
-            logger.info(f"Moving {srcPath} -> {dstPath}")
-            shutil.move(srcPath, dstPath)
-            file.name = os.path.basename(dstPath)
+        model_root = Path(self.params.model_dir).resolve()
+        model_root.mkdir(parents=True, exist_ok=True)
+        slot_dir = model_root / str(params.slot)
+        # A pre-existing slot symlink must not redirect replacement outside the model root.
+        if slot_dir.is_symlink():
+            raise ValueError("Model slot cannot be a symlink")
+        with tempfile.TemporaryDirectory(prefix=".model-stage-", dir=model_root) as temp:
+            stage_root = Path(temp)
+            stage_slot = stage_root / str(params.slot)
+            uploaded_sources = []
+            if params.isSampleMode:
+                await downloadSample(self.params.sample_mode, params.sampleId, str(stage_root), params.slot, params.params)
+            else:
+                stage_slot.mkdir()
+                upload_root = Path(UPLOAD_DIR).resolve()
+                names = set()
+                if any(f.kind not in ("rvcModel", "rvcIndex") for f in params.files) or sum(f.kind == "rvcIndex" for f in params.files) > 1:
+                    raise ValueError("Invalid model files")
+                for file in params.files:
+                    if not isinstance(file.name, str) or not file.name or Path(file.name).name != file.name or "\\" in file.name or file.name in (".", ".."):
+                        raise ValueError("Invalid model filename")
+                    source = (upload_root / file.dir / file.name).resolve()
+                    if not source.is_relative_to(upload_root) or not source.is_file():
+                        raise ValueError("Invalid uploaded model path")
+                    if file.name.lower() == "params.json":
+                        raise ValueError("Reserved model filename")
+                    if file.name in names:
+                        raise ValueError("Duplicate model filename")
+                    names.add(file.name)
+                    uploaded_sources.append(source)
+                    shutil.copy2(source, stage_slot / file.name)
+                if sum(f.kind == "rvcModel" for f in params.files) != 1:
+                    raise ValueError("Exactly one RVC model is required")
+                slot_info = RVCModelSlotGenerator.load_model(params, str(stage_root))
+                from data.ModelSlot import saveSlotInfo
+                saveSlotInfo(str(stage_root), params.slot, slot_info)
 
-        # メタデータ作成(各VCで定義)
-        if params.voiceChangerType == "RVC":
-            slotInfo = RVCModelSlotGenerator.load_model(params)
-            self.modelSlotManager.save_model_slot(params.slot, slotInfo)
-            if params.slot == self.settings.modelSlotIndex:
-                self.initialize(params.slot)
-
-        logger.info(f"params, {params}")
+            def commit_model():
+                with self.device_manager.lock:
+                    backup = stage_root / "previous"
+                    had_slot = slot_dir.exists()
+                    if had_slot:
+                        os.replace(slot_dir, backup)
+                    try:
+                        os.replace(stage_slot, slot_dir)
+                        self.modelSlotManager.getAllSlotInfo(reload=True)
+                        if params.slot == self.settings.modelSlotIndex:
+                            slot_info = self.modelSlotManager.get_slot_info(params.slot)
+                            defaults = {"tran": slot_info.defaultTune, "formantShift": slot_info.defaultFormantShift,
+                                        "indexRatio": slot_info.defaultIndexRatio, "protect": slot_info.defaultProtect}
+                            old_defaults = {key: self.settings.get_property(key) for key in defaults}
+                            try:
+                                self.settings.set_properties(defaults)
+                                candidate = RVCr2(slot_info, self.settings)
+                                candidate.realloc(self.vc.block_frame, self.vc.extra_frame, self.vc.crossfade_frame, self.vc.sola_search_frame)
+                                candidate.initialize()
+                                if candidate.pipeline is None:
+                                    raise RuntimeError("Failed to initialize model pipeline")
+                                self.vc.vcmodel = candidate
+                            except Exception:
+                                self.settings.set_properties(old_defaults)
+                                raise
+                    except Exception:
+                        if slot_dir.exists():
+                            shutil.rmtree(slot_dir)
+                        if had_slot:
+                            os.replace(backup, slot_dir)
+                        self.modelSlotManager.getAllSlotInfo(reload=True)
+                        raise
+            commit_task = asyncio.create_task(asyncio.to_thread(commit_model))
+            try:
+                await asyncio.shield(commit_task)
+            except asyncio.CancelledError:
+                # Keep the staging directory alive until the worker is done.
+                await commit_task
+                raise
+            for source in uploaded_sources:
+                try:
+                    source.unlink()
+                except OSError:
+                    logger.warning("Could not remove accepted uploaded file: %s", source)
         return {"status": "OK"}
 
     def get_info(self):
@@ -172,21 +237,77 @@ class VoiceChangerManager(ServerAudioCallbacks):
             logger.error(f"Unknown voice changer model: {slotInfo.voiceChangerType}")
 
     def update_settings(self, key: str, val: Any):
+        # Serialize updates through stream restarts without holding the inference lock
+        # while PortAudio waits for a callback to finish.
+        with self._settings_lock:
+            with self.device_manager.lock:
+                audio_updates = []
+                self._update_settings_locked(key, val, audio_updates)
+            for update in audio_updates:
+                self.server_audio.update_settings(*update)
+        return self.get_info()
+
+    def _select_model(self, index: int):
+        old_index = self.settings.modelSlotIndex
+        active_model = self.vc.vcmodel
+        if index == old_index and (index == -1 or (active_model is not None and active_model.pipeline is not None)):
+            return
+
+        candidate = None
+        defaults = {}
+        if index != -1:
+            slot = self.modelSlotManager.get_slot_info(index)
+            if slot is None or slot.voiceChangerType != 'RVC':
+                raise ValueError("Invalid model slot")
+            defaults = {'tran': slot.defaultTune, 'formantShift': slot.defaultFormantShift,
+                        'indexRatio': slot.defaultIndexRatio, 'protect': slot.defaultProtect}
+            candidate = RVCr2(slot, self.settings)
+            candidate.realloc(self.vc.block_frame, self.vc.extra_frame, self.vc.crossfade_frame, self.vc.sola_search_frame)
+            candidate.initialize()
+            if candidate.pipeline is None:
+                raise RuntimeError("Failed to initialize model pipeline")
+
+        old_defaults = {key: self.settings.get_property(key) for key in defaults}
+        try:
+            self.settings.set_properties(defaults)
+            self.settings.set_property('modelSlotIndex', index)
+            self.store_setting()
+        except Exception:
+            self.settings.set_properties(old_defaults)
+            self.settings.set_property('modelSlotIndex', old_index)
+            raise
+        self.vc.vcmodel = candidate
+        if self.vc.sola_buffer is not None:
+            self.vc.sola_buffer.zero_()
+
+    def _update_settings_locked(self, key: str, val: Any, audio_updates: list):
         logger.info(f"update configuration {key}: {val}")
+        if key == 'modelSlotIndex':
+            self._select_model(int(val))
+            return
+        if key in {'inputSampleRate', 'outputSampleRate', 'serverAudioSampleRate',
+                   'serverInputAudioSampleRate', 'serverOutputAudioSampleRate', 'serverMonitorAudioSampleRate'}:
+            if int(val) <= 0:
+                raise ValueError("Sample rate must be positive")
+        elif key == 'gpu' and int(val) not in {device['id'] for device in self.devices}:
+            raise ValueError("Unknown GPU device")
         error, old_value = self.settings.set_property(key, val)
         if error:
-            return self.get_info()
+            raise ValueError(f"Unknown or immutable setting: {key}")
         # TODO: This is required to get type-casted setting. But maybe this should be done prior to setting.
         val = self.settings.get_property(key)
         if old_value == val:
-            return self.get_info()
+            return
         # TODO: Storing settings on each change is suboptimal. Maybe timed autosave?
-        self.store_setting()
+        try:
+            self.store_setting()
+        except Exception:
+            # Boolean settings accept the string values used by the client.
+            restore_value = str(old_value).lower() if isinstance(old_value, bool) else old_value
+            self.settings.set_property(key, restore_value)
+            raise
 
-        if key == "modelSlotIndex":
-            logger.info(f"Model slot is changed {old_value} -> {val}")
-            self.initialize(val)
-        elif key == 'gpu':
+        if key == 'gpu':
             self.device_manager.set_device(val)
         elif key == 'forceFp32':
             self.device_manager.set_force_fp32(val)
@@ -198,19 +319,17 @@ class VoiceChangerManager(ServerAudioCallbacks):
         # Revert change in case we switched back to client audio mode.
         elif key == 'enableServerAudio':
             if val:
-                self.update_settings('inputSampleRate', self.settings.serverAudioSampleRate)
-                self.update_settings('outputSampleRate', self.settings.serverAudioSampleRate)
+                self._update_settings_locked('inputSampleRate', self.settings.serverAudioSampleRate, audio_updates)
+                self._update_settings_locked('outputSampleRate', self.settings.serverAudioSampleRate, audio_updates)
             else:
-                self.update_settings('inputSampleRate', 48000)
-                self.update_settings('outputSampleRate', 48000)
+                self._update_settings_locked('inputSampleRate', 48000, audio_updates)
+                self._update_settings_locked('outputSampleRate', 48000, audio_updates)
         elif key == 'serverAudioSampleRate':
-            self.update_settings('inputSampleRate', self.settings.serverAudioSampleRate)
-            self.update_settings('outputSampleRate', self.settings.serverAudioSampleRate)
+            self._update_settings_locked('inputSampleRate', self.settings.serverAudioSampleRate, audio_updates)
+            self._update_settings_locked('outputSampleRate', self.settings.serverAudioSampleRate, audio_updates)
 
-        self.server_audio.update_settings(key, val, old_value)
         self.vc.update_settings(key, val, old_value)
-
-        return self.get_info()
+        audio_updates.append((key, val, old_value))
 
     def set_browser_stream(self, stream_id: str, active: bool) -> bool:
         with self.device_manager.lock:
@@ -277,6 +396,10 @@ class VoiceChangerManager(ServerAudioCallbacks):
         except Exception as e:
             logger.exception(e)
             return np.zeros(1, dtype=np.float32), 0, [0, 0, 0], ('Exception', format_exc())
+
+    async def change_voice_async(self, receivedData: AudioInOutFloat, stream_id: str | None = None, legacy_socket: str | None = None):
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(self._inference_executor, self.change_voice, receivedData, stream_id, legacy_socket)
 
     def export2onnx(self):
         return self.vc.export2onnx()

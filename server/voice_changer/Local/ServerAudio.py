@@ -1,7 +1,7 @@
 import numpy as np
 from const import SERVER_DEVICE_SAMPLE_RATES
 
-from queue import Queue
+from queue import Empty, Full, Queue
 import logging
 from voice_changer.VoiceChangerSettings import VoiceChangerSettings
 from voice_changer.Local.AudioDeviceList import checkSamplingRate, list_audio_device
@@ -35,7 +35,7 @@ class ServerAudio:
         self.mon_wav = None
         self.serverAudioInputDevices = None
         self.serverAudioOutputDevices = None
-        self.monQueue = Queue()
+        self.monQueue = Queue(maxsize=1)
         self.performance = [0, 0, 0]
 
         self.stream = None
@@ -75,32 +75,48 @@ class ServerAudio:
         return out_wav
 
     def audio_stream_callback(self, indata: np.ndarray, outdata: np.ndarray, frames, times, status):
+        outdata.fill(0)
         try:
             out_wav = self._processDataWithTime(indata)
             outputChannels = outdata.shape[1]
             outdata[:] = (np.repeat(out_wav, outputChannels).reshape(-1, outputChannels) * self.settings.serverOutputAudioGain)
         except Exception as e:
+            outdata.fill(0)
             self.callbacks.emit_to(0, self.performance, ('ERR_GENERIC_SERVER_AUDIO_ERROR', ERR_GENERIC_SERVER_AUDIO_ERROR))
             logger.exception(e)
 
     def audio_stream_callback_mon_queue(self, indata: np.ndarray, outdata: np.ndarray, frames, times, status):
+        outdata.fill(0)
         try:
             out_wav = self._processDataWithTime(indata)
-            self.monQueue.put(out_wav)
+            try:
+                self.monQueue.put_nowait(out_wav)
+            except Full:
+                try:
+                    self.monQueue.get_nowait()
+                except Empty:
+                    pass
+                try:
+                    self.monQueue.put_nowait(out_wav)
+                except Full:
+                    pass
             outputChannels = outdata.shape[1]
             outdata[:] = (np.repeat(out_wav, outputChannels).reshape(-1, outputChannels) * self.settings.serverOutputAudioGain)
         except Exception as e:
+            outdata.fill(0)
             self.callbacks.emit_to(0, self.performance, ('ERR_GENERIC_SERVER_AUDIO_ERROR', ERR_GENERIC_SERVER_AUDIO_ERROR))
             logger.exception(e)
 
     def audio_monitor_callback(self, outdata: np.ndarray, frames, times, status):
+        outdata.fill(0)
         try:
-            mon_wav = self.monQueue.get()
-            while self.monQueue.qsize() > 0:
-                self.monQueue.get()
+            mon_wav = self.monQueue.get_nowait()
             outputChannels = outdata.shape[1]
             outdata[:] = (np.repeat(mon_wav, outputChannels).reshape(-1, outputChannels) * self.settings.serverMonitorAudioGain)
+        except Empty:
+            pass
         except Exception as e:
+            outdata.fill(0)
             self.callbacks.emit_to(0, self.performance, ('ERR_GENERIC_SERVER_AUDIO_ERROR', ERR_GENERIC_SERVER_AUDIO_ERROR))
             logger.exception(e)
 
@@ -146,12 +162,19 @@ class ServerAudio:
     def stop(self):
         self.running = False
         self.settings.serverAudioStated = 0
-        if self.stream is not None:
-            self.stream.close()
-            self.stream = None
-        if self.monitor is not None:
-            self.monitor.close()
-            self.monitor = None
+        stream, monitor = self.stream, self.monitor
+        self.stream = self.monitor = None
+        try:
+            if stream is not None:
+                stream.close()
+        finally:
+            if monitor is not None:
+                monitor.close()
+            while True:
+                try:
+                    self.monQueue.get_nowait()
+                except Empty:
+                    break
 
     ###########################################
     # Start Section
@@ -186,7 +209,7 @@ class ServerAudio:
         outputExtraSetting = None
         if serverOutputAudioDevice and "WASAPI" in serverOutputAudioDevice.hostAPI:
             outputExtraSetting = sd.WasapiSettings(exclusive=wasapiExclusiveMode, auto_convert=not wasapiExclusiveMode)
-        elif serverInputAudioDevice and "ASIO" in serverInputAudioDevice.hostAPI and self.settings.asioOutputChannel != -1:
+        elif serverOutputAudioDevice and "ASIO" in serverOutputAudioDevice.hostAPI and self.settings.asioOutputChannel != -1:
             outputExtraSetting = sd.AsioSettings(channel_selectors=[self.settings.asioOutputChannel])
             outputChannels = 1
 
@@ -199,7 +222,6 @@ class ServerAudio:
         logger.info(f"  [Output]: {serverOutputAudioDevice}, {outputExtraSetting}")
         logger.info(f"  [Monitor]: {serverMonitorAudioDevice}, {monitorExtraSetting}")
 
-        # Deviceがなかったらいったんスリープ
         # サンプリングレート
         # 同一サンプリングレートに統一（変換時にサンプルが不足する場合があるため。パディング方法が明らかになれば、それぞれ設定できるかも）
         self.settings.serverInputAudioSampleRate = self.settings.serverAudioSampleRate

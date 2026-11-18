@@ -21,22 +21,21 @@ export const MoreActionArea = (_props: MoreActionAreaProps) => {
         };
         return (
             <>
-                <div className="config-sub-area-control left-padding-1">
-                    <div className="config-sub-area-control-title">more...</div>
+                <div className="config-sub-area-control">
                     <div className="config-sub-area-control-field config-sub-area-control-field-long">
                         <div className="config-sub-area-buttons">
-                            <div onClick={onOpenMergeLabClicked} className="config-sub-area-button">
+                            <button type="button" onClick={onOpenMergeLabClicked} className="studio-button">
                                 Merge Lab
-                            </div>
-                            <div onClick={onOpenAdvancedSettingClicked} className="config-sub-area-button">
-                                Advanced Setting
-                            </div>
-                            <div onClick={onOpenGetServerInformationClicked} className="config-sub-area-button">
+                            </button>
+                            <button type="button" onClick={onOpenAdvancedSettingClicked} className="studio-button">
+                                Advanced settings
+                            </button>
+                            <button type="button" onClick={onOpenGetServerInformationClicked} className="studio-button">
                                 Server Info
-                            </div>
-                            <div onClick={onOpenGetClientInformationClicked} className="config-sub-area-button">
+                            </button>
+                            <button type="button" onClick={onOpenGetClientInformationClicked} className="studio-button">
                                 Client Info
-                            </div>
+                            </button>
                         </div>
                     </div>
                 </div>

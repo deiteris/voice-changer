@@ -1,5 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Chicle&family=Poppins:ital,wght@0,200;0,400;0,600;1,200;1,400;1,600&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,200;0,400;0,600;1,200;1,400;1,600&display=swap");
 
 * {
     margin: 0;
@@ -112,11 +111,6 @@ body {
         }
     }
 
-    .character-area .portrait-area .portrait-container .portrait,
-    .model-slot-tile-icon {
-        opacity: 0.8;
-    }
-
     a {
         color: #FFF
     }
@@ -178,7 +172,6 @@ a.hint-text {
     height: 100%;
     width: 100%;
     padding: 2rem;
-    font-family: "Yusei Magic", sans-serif;
     display: flex;
     flex-direction: column;
     font-size: 1rem;
@@ -810,11 +803,6 @@ a.hint-text {
         .dialog-content {
             width: 100%;
             padding: 0 15px 15px 15px;
-            .dialog-application-title {
-                font-family: "Chicle", cursive;
-                font-size: 3rem;
-                text-align: center;
-            }
             .dialog-content-part {
                 margin-top: 1rem;
                 margin-bottom: 1rem;
@@ -1214,177 +1202,10 @@ a.hint-text {
         }
     }
 }
-.model-slot-area {
-    display: inline-block;
-    background: var(--company-color2);
-    border-radius: 10px;
-    padding: 20px;
-    .model-slot-panel {
-        display: flex;
-        flex-direction: row;
-        gap: 5px;
-        .model-slot-tiles-container {
-            display: flex;
-            flex-direction: row;
-            gap: 2px;
-            flex-wrap: wrap;
-            overflow-y: scroll;
-            max-height: 12rem;
-
-            /* width: calc(30rem + 40px + 10px); */
-        }
-
-        .model-slot-buttons {
-            display: flex;
-            gap: 5px;
-            flex-direction: column;
-            justify-content: space-between;
-            width: 4rem;
-            .model-slot-button {
-                border: solid 2px #999;
-                color: white;
-                font-size: 0.8rem;
-                border-radius: 2px;
-                background: #333;
-                cursor: pointer;
-                padding: 5px;
-                text-align: center;
-                width: 3rem;
-            }
-            .model-slot-button:hover {
-                border: solid 2px #faa;
-            }
-            .model-slot-sort-buttons {
-                height: 50%;
-                .model-slot-sort-button {
-                    color: white;
-                    font-size: 0.8rem;
-                    border-radius: 4px;
-                    background: #333;
-                    border: solid 2px #444;
-                    cursor: pointer;
-                    padding: 1px;
-                    text-align: center;
-                    width: 3rem;
-                }
-                .model-slot-sort-button-active {
-                    color: white;
-                    font-size: 0.8rem;
-                    border-radius: 4px;
-                    background: #595;
-                    border: solid 2px #595;
-                    cursor: pointer;
-                    padding: 1px;
-                    text-align: center;
-                    width: 3rem;
-                }
-                .model-slot-sort-button:hover {
-                    border: solid 2px #faa;
-                    background: #343;
-                }
-            }
-        }
-    }
-}
-.model-slot-tile-container,
-.model-slot-tile-container-selected {
-    width: 6rem;
-    height: 6rem;
-    border-radius: 2px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-.model-slot-tile-container-selected {
-    background: #43030c;
-}
-.model-slot-tile-container:hover {
-    background: #43030c;
-}
-
-.model-slot-tile-icon-div {
-    width: 5rem;
-    height: 5rem;
-    padding-top: 4px;
-    position: relative;
-}
-.model-slot-tile-icon {
-    width: 5rem;
-    height: 5rem;
-    object-fit: contain;
-    border-radius: 10px;
-    position: absolute;
-}
-.model-slot-tile-vctype {
-    position: absolute;
-    font-size: 0.6rem;
-    font-weight: 800;
-    top: 5px;
-    left: 2px;
-    background: RGBA(10, 200, 100, 0.6);
-    border-radius: 5px;
-    padding: 0px 2px 0px 2px;
-}
-.model-slot-tile-icon-no-entry {
-    color: gray;
-    position: absolute;
-    top: 2rem;
-}
-.model-slot-tile-dscription {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: navajowhite;
-    padding-top: 4px;
-}
-
 .character-area {
     display: flex;
     gap: 5px;
     padding: 20px;
-    .portrait-area {
-        width: 20rem;
-        height: 20rem;
-        .portrait-container {
-            position: relative;
-            width: 20rem;
-            height: 20rem;
-            .portrait {
-                width: 20rem;
-                height: 20rem;
-                object-fit: contain;
-                border-radius: 10px;
-                position: absolute;
-            }
-            .portrait-area-status {
-                width: 5.5rem;
-                background: var(--company-color2);
-                color: white;
-                position: absolute;
-                padding: 3px;
-                font-size: 0.7rem;
-                left: 5px;
-                top: 5px;
-                border-radius: 2px;
-                .portrait-area-status-vctype {
-                    font-weight: 800;
-                    color: #FFF;
-                }
-            }
-            .portrait-area-terms-of-use {
-                width: 5rem;
-                background: rgba(100, 100, 100, 0.5);
-                color: white;
-                position: absolute;
-                padding: 2px;
-                font-size: 0.7rem;
-                right: 5px;
-                bottom: 5px;
-                .portrait-area-terms-of-use-link {
-                    color: white;
-                }
-            }
-        }
-    }
     .character-area-control-area {
         display: flex;
         flex-direction: column;
@@ -1393,69 +1214,6 @@ a.hint-text {
             display: flex;
             gap: 3px;
             align-items: center;
-            .character-area-control-buttons {
-                display: flex;
-                flex-direction: row;
-                gap: 10px;
-                .character-area-control-button-active {
-                    width: 5rem;
-                    border: var(--button-selector-active-border);
-                    border-radius: 2px;
-                    background: var(--button-selector-active);
-                    font-weight: 700;
-                    text-align: center;
-                }
-                .character-area-control-button-stanby {
-                    width: 5rem;
-                    border: var(--button-selector-inactive-border);
-                    border-radius: 2px;
-                    background: var(--button-selector-inactive);
-                    cursor: pointer;
-                    font-weight: 700;
-                    text-align: center;
-                    &:hover {
-                        border: solid 1px #000;
-                    }
-                }
-                .character-area-control-button-disable {
-                    width: 5rem;
-                    border: solid 1px #333;
-                    border-radius: 2px;
-                    background: #d3d7d3;
-                    font-weight: 700;
-                    text-align: center;
-                    color: grey;
-                }
-                .character-area-control-passthru-button-stanby {
-                    width: 5rem;
-                    border: var(--button-passthru-inactive-border);
-                    border-radius: 15px;
-                    padding: 2px;
-                    background: var(--button-passthru-inactive);
-                    cursor: pointer;
-                    font-weight: 700;
-                    font-size: 0.8rem;
-                    text-align: center;
-                    &:hover {
-                        border: solid 1px #000;
-                    }
-                }
-                .character-area-control-passthru-button-active {
-                    width: 5rem;
-                    border: var(--button-passthru-active-border);
-                    border-radius: 15px;
-                    padding: 2px;
-                    background: var(--button-passthru-active);
-                    cursor: pointer;
-                    font-weight: 700;
-                    font-size: 0.8rem;
-                    text-align: center;
-                    &:hover {
-                        border: solid 1px #000;
-                    }
-                }
-            }
-
             .character-area-control-title {
                 width: 4rem;
                 font-weight: 700;
@@ -1707,52 +1465,6 @@ audio::-webkit-media-controls-overlay-enclosure{
             }
             .config-sub-area-control-field-long {
                 width: 30rem;
-            }
-        }
-    }
-}
-
-.headerArea {
-    display: flex;
-    flex-direction: column;
-    .title1 {
-        display: flex;
-        flex-direction: row;
-        gap: 5px;
-        align-items: flex-end;
-        .title {
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
-        .title-version {
-            font-size: 0.9rem;
-        }
-        .title-version-number {
-            font-size: 0.7rem;
-        }
-    }
-    .icons {
-        display: flex;
-        flex-direction: row;
-        gap: 20px;
-        color: #FFF;
-        .belongings {
-            display: flex;
-            flex-direction: row;
-            gap: 3px;
-            .belongings-button {
-                border: solid 2px #999;
-                color: #FFF;
-                font-size: 0.8rem;
-                border-radius: 5px;
-                background: #333;
-                cursor: pointer;
-                padding: 5px;
-                height: 1.7rem;
-                top: -2px;
-            }
-            .belongings-button:hover {
-                border: solid 2px #cc6;
             }
         }
     }

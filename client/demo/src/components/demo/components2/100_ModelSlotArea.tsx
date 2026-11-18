@@ -1,116 +1,77 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
+import { faArrowDown19, faArrowDownAZ, faCheck, faSliders, faWaveSquare } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { toast } from "react-toastify";
 import { useAppState } from "../../../001_provider/001_AppStateProvider";
 import { useGuiState } from "../001_GuiStateProvider";
-import { useMessageBuilder } from "../../../hooks/useMessageBuilder";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 export type ModelSlotAreaProps = {};
 
-const SortTypes = {
-    slot: "slot",
-    name: "name",
-} as const;
-export type SortTypes = (typeof SortTypes)[keyof typeof SortTypes];
-
 export const ModelSlotArea = (_props: ModelSlotAreaProps) => {
     const { serverSetting } = useAppState();
-    const guiState = useGuiState();
-    const messageBuilderState = useMessageBuilder();
-    const [sortType, setSortType] = useState<SortTypes>("slot");
+    const { stateControls } = useGuiState();
+    const [sortType, setSortType] = useState<"slot" | "name">("slot");
+    const settings = serverSetting.serverSetting;
+    const models = (settings.modelSlots ?? []).filter((model) => model.modelFile);
+    if (sortType === "name") models.sort((a, b) => a.name.localeCompare(b.name));
 
-    useMemo(() => {
-        messageBuilderState.setMessage(__filename, "edit", { ja: "編集", en: "edit" });
-    }, []);
-
-    const modelTiles = useMemo(() => {
-        if (!serverSetting.serverSetting.modelSlots) {
-            return [];
+    const selectModel = async (slotIndex: typeof settings.modelSlotIndex) => {
+        stateControls.showWaitingCheckbox.updateState(true);
+        try {
+            await serverSetting.updateServerSettings({ ...settings, modelSlotIndex: slotIndex });
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : String(error));
+        } finally {
+            stateControls.showWaitingCheckbox.updateState(false);
         }
-        const modelSlots =
-            sortType == "slot"
-                ? serverSetting.serverSetting.modelSlots
-                : serverSetting.serverSetting.modelSlots.slice().sort((a, b) => {
-                      return a.name.localeCompare(b.name);
-                  });
+    };
 
-        return modelSlots
-            .map((x, index) => {
-                if (!x.modelFile || x.modelFile.length == 0) {
-                    return null;
-                }
-                const tileContainerClass = x.slotIndex == serverSetting.serverSetting.modelSlotIndex ? "model-slot-tile-container-selected" : "model-slot-tile-container";
-                const name = x.name.length > 8 ? x.name.substring(0, 7) + "..." : x.name;
-
-                const modelDir = serverSetting.serverSetting.voiceChangerParams.model_dir;
-                const icon = x.iconFile.length > 0 ? modelDir + "/" + x.slotIndex + "/" + x.iconFile.split(/[\/\\]/).pop() : "./assets/icons/human.png";
-
-                const iconElem =
-                    x.iconFile.length > 0 ? (
-                        <>
-                            {/* <img className="model-slot-tile-icon" src={serverSetting.serverSetting.voiceChangerParams.model_dir + "/" + x.slotIndex + "/" + x.iconFile.split(/[\/\\]/).pop()} alt={x.name} /> */}
-                            <img className="model-slot-tile-icon" src={icon} alt={x.name} />
-                            <div className="model-slot-tile-vctype">{x.voiceChangerType}</div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="model-slot-tile-icon-no-entry">no image</div>
-                            <div className="model-slot-tile-vctype">{x.voiceChangerType}</div>
-                        </>
-                    );
-
-                const clickAction = async () => {
-                    guiState.stateControls.showWaitingCheckbox.updateState(true);
-                    await serverSetting.updateServerSettings({ ...serverSetting.serverSetting, modelSlotIndex: x.slotIndex });
-                    guiState.stateControls.showWaitingCheckbox.updateState(false);
-                };
-
-                return (
-                    <div key={index} className={tileContainerClass} onClick={clickAction}>
-                        <div className="model-slot-tile-icon-div">{iconElem}</div>
-                        <div className="model-slot-tile-dscription">{name}</div>
-                    </div>
-                );
-            })
-            .filter((x) => x != null);
-    }, [serverSetting.serverSetting.modelSlots, serverSetting.serverSetting.modelSlotIndex, sortType]);
-
-    const modelSlotArea = useMemo(() => {
-        const onModelSlotEditClicked = () => {
-            guiState.stateControls.showModelSlotManagerCheckbox.updateState(true);
-        };
-        const sortSlotByIdClass = sortType == "slot" ? "model-slot-sort-button-active" : "model-slot-sort-button";
-        const sortSlotByNameClass = sortType == "name" ? "model-slot-sort-button-active" : "model-slot-sort-button";
-        return (
-            <div className="model-slot-area">
-                <div className="model-slot-panel">
-                    <div className="model-slot-tiles-container">{modelTiles}</div>
-                    <div className="model-slot-buttons">
-                        <div className="model-slot-sort-buttons">
-                            <div
-                                className={sortSlotByIdClass}
-                                onClick={() => {
-                                    setSortType("slot");
-                                }}
-                            >
-                                <FontAwesomeIcon icon={["fas", "arrow-down-1-9"]} style={{ fontSize: "1rem" }} />
-                            </div>
-                            <div
-                                className={sortSlotByNameClass}
-                                onClick={() => {
-                                    setSortType("name");
-                                }}
-                            >
-                                <FontAwesomeIcon icon={["fas", "arrow-down-a-z"]} style={{ fontSize: "1rem" }} />
-                            </div>
-                        </div>
-                        <div className="model-slot-button" onClick={onModelSlotEditClicked}>
-                            {messageBuilderState.getMessage(__filename, "edit")}
-                        </div>
-                    </div>
+    return (
+        <section className="voice-library" aria-labelledby="voice-library-heading">
+            <div className="studio-section-heading">
+                <div>
+                    <h2 id="voice-library-heading">Voice library</h2>
+                    <p>{models.length} {models.length === 1 ? "model" : "models"} installed</p>
                 </div>
+                <button type="button" className="studio-button" onClick={() => stateControls.showModelSlotManagerCheckbox.updateState(true)}>
+                    <FontAwesomeIcon icon={faSliders} /> Manage models
+                </button>
             </div>
-        );
-    }, [modelTiles, sortType]);
-
-    return modelSlotArea;
+            {models.length ? (
+                <>
+                    <div className="voice-library-sort" role="group" aria-label="Sort models">
+                        <button type="button" className="studio-button" aria-pressed={sortType === "slot"} onClick={() => setSortType("slot")}>
+                            <FontAwesomeIcon icon={faArrowDown19} /> Slot
+                        </button>
+                        <button type="button" className="studio-button" aria-pressed={sortType === "name"} onClick={() => setSortType("name")}>
+                            <FontAwesomeIcon icon={faArrowDownAZ} /> Name
+                        </button>
+                    </div>
+                    <div className="voice-library-grid">
+                        {models.map((model) => {
+                            const isSelected = model.slotIndex === settings.modelSlotIndex;
+                            const image = model.iconFile ? `${settings.voiceChangerParams.model_dir}/${model.slotIndex}/${model.iconFile.split(/[\/\\]/).pop()}` : null;
+                            return (
+                                <button key={model.slotIndex} type="button" className="voice-card" aria-pressed={isSelected} onClick={() => selectModel(model.slotIndex)}>
+                                    <span className="voice-card-art">
+                                        {image ? <img src={image} alt="" loading="lazy" /> : <FontAwesomeIcon icon={faWaveSquare} />}
+                                        {isSelected && <span className="voice-card-check"><FontAwesomeIcon icon={faCheck} /></span>}
+                                    </span>
+                                    <span className="voice-card-caption">
+                                        <strong title={model.name}>{model.name || `Slot ${model.slotIndex}`}</strong>
+                                        <small>{model.voiceChangerType}</small>
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </>
+            ) : (
+                <div className="voice-library-empty">
+                    <FontAwesomeIcon icon={faWaveSquare} />
+                    <p>Upload a voice model or download a sample in Manage models.</p>
+                </div>
+            )}
+        </section>
+    );
 };

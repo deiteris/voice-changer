@@ -2,8 +2,17 @@ import json
 import os
 import torch
 import torch.nn
+from settings import get_settings
+from packaging.version import Version
 from typing import Tuple, List, Any
 from safetensors.torch import _remove_duplicate_names, load_file, save_file
+
+
+def load_rvc_checkpoint(path, map_location="cpu"):
+    unsafe = get_settings().allow_unsafe_rvc_checkpoints
+    if not unsafe and Version(torch.__version__.split("+")[0]) < Version("2.10.0"):
+        raise ValueError("This PyTorch version cannot safely load RVC checkpoints. Use safetensors or enable ALLOW_UNSAFE_RVC_CHECKPOINTS only for trusted files.")
+    return torch.load(path, map_location=map_location, weights_only=not unsafe)
 
 
 def load_model(model: torch.nn.Module, f: dict[str, Any], strict=True) -> Tuple[List[str], List[str]]:
@@ -49,7 +58,7 @@ def convert_file(
     discard_names: list[str] = [],
 ):
     metadata = {"format": "pt"}
-    data: dict = torch.load(pt_filename, map_location="cpu", weights_only=False)
+    data: dict = load_rvc_checkpoint(pt_filename, map_location="cpu")
     for k, v in data.items():
         if k in ['weight', 'state_dict']:
             continue

@@ -1,0 +1,472 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-18T05:25:08.486Z",
+  "title": "Design System: Voice Changer",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Lilac accent",
+        "canonical": "#63469e",
+        "tonalRamp": [
+          "oklch(15% 0.039 299)",
+          "oklch(25% 0.075 299)",
+          "oklch(36% 0.104 299)",
+          "oklch(48% 0.130 299)",
+          "oklch(60% 0.125 299)",
+          "oklch(72% 0.095 299)",
+          "oklch(84% 0.059 299)",
+          "oklch(95% 0.021 299)"
+        ]
+      },
+      "accent-dark": {
+        "role": "primary",
+        "displayName": "Lilac accent (dark)",
+        "canonical": "#c3a8f2",
+        "tonalRamp": [
+          "oklch(15% 0.039 299)",
+          "oklch(25% 0.075 299)",
+          "oklch(36% 0.104 299)",
+          "oklch(48% 0.130 299)",
+          "oklch(60% 0.125 299)",
+          "oklch(72% 0.095 299)",
+          "oklch(84% 0.059 299)",
+          "oklch(95% 0.021 299)"
+        ]
+      },
+      "on-accent": {
+        "role": "primary",
+        "displayName": "Accent foreground",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.009 299)",
+          "oklch(25% 0.017 299)",
+          "oklch(36% 0.024 299)",
+          "oklch(48% 0.030 299)",
+          "oklch(60% 0.029 299)",
+          "oklch(72% 0.022 299)",
+          "oklch(84% 0.013 299)",
+          "oklch(95% 0.005 299)"
+        ]
+      },
+      "on-accent-dark": {
+        "role": "primary",
+        "displayName": "Accent foreground (dark)",
+        "canonical": "#241935",
+        "tonalRamp": [
+          "oklch(15% 0.009 299)",
+          "oklch(25% 0.017 299)",
+          "oklch(36% 0.024 299)",
+          "oklch(48% 0.030 299)",
+          "oklch(60% 0.029 299)",
+          "oklch(72% 0.022 299)",
+          "oklch(84% 0.013 299)",
+          "oklch(95% 0.005 299)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Charcoal ink",
+        "canonical": "#24232b",
+        "tonalRamp": [
+          "oklch(15% 0.006 292)",
+          "oklch(25% 0.012 292)",
+          "oklch(36% 0.016 292)",
+          "oklch(48% 0.020 292)",
+          "oklch(60% 0.019 292)",
+          "oklch(72% 0.015 292)",
+          "oklch(84% 0.009 292)",
+          "oklch(95% 0.003 292)"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Charcoal ink (dark)",
+        "canonical": "#f3effa",
+        "tonalRamp": [
+          "oklch(15% 0.006 292)",
+          "oklch(25% 0.012 292)",
+          "oklch(36% 0.016 292)",
+          "oklch(48% 0.020 292)",
+          "oklch(60% 0.019 292)",
+          "oklch(72% 0.015 292)",
+          "oklch(84% 0.009 292)",
+          "oklch(95% 0.003 292)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted ink",
+        "canonical": "#615e6b",
+        "tonalRamp": [
+          "oklch(15% 0.009 304)",
+          "oklch(25% 0.017 304)",
+          "oklch(36% 0.024 304)",
+          "oklch(48% 0.030 304)",
+          "oklch(60% 0.029 304)",
+          "oklch(72% 0.022 304)",
+          "oklch(84% 0.013 304)",
+          "oklch(95% 0.005 304)"
+        ]
+      },
+      "muted-dark": {
+        "role": "neutral",
+        "displayName": "Muted ink (dark)",
+        "canonical": "#bcb4c8",
+        "tonalRamp": [
+          "oklch(15% 0.009 304)",
+          "oklch(25% 0.017 304)",
+          "oklch(36% 0.024 304)",
+          "oklch(48% 0.030 304)",
+          "oklch(60% 0.029 304)",
+          "oklch(72% 0.022 304)",
+          "oklch(84% 0.013 304)",
+          "oklch(95% 0.005 304)"
+        ]
+      },
+      "page": {
+        "role": "neutral",
+        "displayName": "Workspace canvas",
+        "canonical": "#faf9fc",
+        "tonalRamp": [
+          "oklch(15% 0.006 301)",
+          "oklch(25% 0.012 301)",
+          "oklch(36% 0.016 301)",
+          "oklch(48% 0.020 301)",
+          "oklch(60% 0.019 301)",
+          "oklch(72% 0.015 301)",
+          "oklch(84% 0.009 301)",
+          "oklch(95% 0.003 301)"
+        ]
+      },
+      "page-dark": {
+        "role": "neutral",
+        "displayName": "Workspace canvas (dark)",
+        "canonical": "#19171f",
+        "tonalRamp": [
+          "oklch(15% 0.006 301)",
+          "oklch(25% 0.012 301)",
+          "oklch(36% 0.016 301)",
+          "oklch(48% 0.020 301)",
+          "oklch(60% 0.019 301)",
+          "oklch(72% 0.015 301)",
+          "oklch(84% 0.009 301)",
+          "oklch(95% 0.003 301)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper surface",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.004 300)",
+          "oklch(25% 0.007 300)",
+          "oklch(36% 0.010 300)",
+          "oklch(48% 0.012 300)",
+          "oklch(60% 0.012 300)",
+          "oklch(72% 0.009 300)",
+          "oklch(84% 0.005 300)",
+          "oklch(95% 0.002 300)"
+        ]
+      },
+      "paper-dark": {
+        "role": "neutral",
+        "displayName": "Paper surface (dark)",
+        "canonical": "#22202a",
+        "tonalRamp": [
+          "oklch(15% 0.004 300)",
+          "oklch(25% 0.007 300)",
+          "oklch(36% 0.010 300)",
+          "oklch(48% 0.012 300)",
+          "oklch(60% 0.012 300)",
+          "oklch(72% 0.009 300)",
+          "oklch(84% 0.005 300)",
+          "oklch(95% 0.002 300)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Surface divider",
+        "canonical": "#e6e2eb",
+        "tonalRamp": [
+          "oklch(15% 0.009 303)",
+          "oklch(25% 0.017 303)",
+          "oklch(36% 0.024 303)",
+          "oklch(48% 0.030 303)",
+          "oklch(60% 0.029 303)",
+          "oklch(72% 0.022 303)",
+          "oklch(84% 0.013 303)",
+          "oklch(95% 0.005 303)"
+        ]
+      },
+      "line-dark": {
+        "role": "neutral",
+        "displayName": "Surface divider (dark)",
+        "canonical": "#40394a",
+        "tonalRamp": [
+          "oklch(15% 0.009 303)",
+          "oklch(25% 0.017 303)",
+          "oklch(36% 0.024 303)",
+          "oklch(48% 0.030 303)",
+          "oklch(60% 0.029 303)",
+          "oklch(72% 0.022 303)",
+          "oklch(84% 0.013 303)",
+          "oklch(95% 0.005 303)"
+        ]
+      },
+      "tint": {
+        "role": "primary",
+        "displayName": "Lilac panel",
+        "canonical": "#f0ebfa",
+        "tonalRamp": [
+          "oklch(15% 0.018 300)",
+          "oklch(25% 0.035 300)",
+          "oklch(36% 0.048 300)",
+          "oklch(48% 0.060 300)",
+          "oklch(60% 0.058 300)",
+          "oklch(72% 0.044 300)",
+          "oklch(84% 0.027 300)",
+          "oklch(95% 0.010 300)"
+        ]
+      },
+      "tint-dark": {
+        "role": "primary",
+        "displayName": "Lilac panel (dark)",
+        "canonical": "#30283f",
+        "tonalRamp": [
+          "oklch(15% 0.018 300)",
+          "oklch(25% 0.035 300)",
+          "oklch(36% 0.048 300)",
+          "oklch(48% 0.060 300)",
+          "oklch(60% 0.058 300)",
+          "oklch(72% 0.044 300)",
+          "oklch(84% 0.027 300)",
+          "oklch(95% 0.010 300)"
+        ]
+      },
+      "live": {
+        "role": "secondary",
+        "displayName": "Live green",
+        "canonical": "#276849",
+        "tonalRamp": [
+          "oklch(15% 0.030 157)",
+          "oklch(25% 0.058 157)",
+          "oklch(36% 0.080 157)",
+          "oklch(48% 0.100 157)",
+          "oklch(60% 0.096 157)",
+          "oklch(72% 0.073 157)",
+          "oklch(84% 0.045 157)",
+          "oklch(95% 0.016 157)"
+        ]
+      },
+      "live-dark": {
+        "role": "secondary",
+        "displayName": "Live green (dark)",
+        "canonical": "#8fdbb3",
+        "tonalRamp": [
+          "oklch(15% 0.030 157)",
+          "oklch(25% 0.058 157)",
+          "oklch(36% 0.080 157)",
+          "oklch(48% 0.100 157)",
+          "oklch(60% 0.096 157)",
+          "oklch(72% 0.073 157)",
+          "oklch(84% 0.045 157)",
+          "oklch(95% 0.016 157)"
+        ]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Timing amber",
+        "canonical": "#865516",
+        "tonalRamp": [
+          "oklch(15% 0.036 71)",
+          "oklch(25% 0.070 71)",
+          "oklch(36% 0.096 71)",
+          "oklch(48% 0.120 71)",
+          "oklch(60% 0.115 71)",
+          "oklch(72% 0.088 71)",
+          "oklch(84% 0.054 71)",
+          "oklch(95% 0.019 71)"
+        ]
+      },
+      "warning-dark": {
+        "role": "secondary",
+        "displayName": "Timing amber (dark)",
+        "canonical": "#f0c380",
+        "tonalRamp": [
+          "oklch(15% 0.036 71)",
+          "oklch(25% 0.070 71)",
+          "oklch(36% 0.096 71)",
+          "oklch(48% 0.120 71)",
+          "oklch(60% 0.115 71)",
+          "oklch(72% 0.088 71)",
+          "oklch(84% 0.054 71)",
+          "oklch(95% 0.019 71)"
+        ]
+      },
+      "error": {
+        "role": "secondary",
+        "displayName": "Timing rose",
+        "canonical": "#a72e43",
+        "tonalRamp": [
+          "oklch(15% 0.045 14)",
+          "oklch(25% 0.087 14)",
+          "oklch(36% 0.120 14)",
+          "oklch(48% 0.150 14)",
+          "oklch(60% 0.144 14)",
+          "oklch(72% 0.110 14)",
+          "oklch(84% 0.068 14)",
+          "oklch(95% 0.024 14)"
+        ]
+      },
+      "error-dark": {
+        "role": "secondary",
+        "displayName": "Timing rose (dark)",
+        "canonical": "#ff9eae",
+        "tonalRamp": [
+          "oklch(15% 0.045 14)",
+          "oklch(25% 0.087 14)",
+          "oklch(36% 0.120 14)",
+          "oklch(48% 0.150 14)",
+          "oklch(60% 0.144 14)",
+          "oklch(72% 0.110 14)",
+          "oklch(84% 0.068 14)",
+          "oklch(95% 0.024 14)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Centered product title."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Selected model name."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Workspace copy."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Action and status labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "dialog",
+        "value": "0 16px 54px rgb(25 18 39 / 24%)",
+        "purpose": "Elevates the outer dialog frame."
+      }
+    ],
+    "motion": [
+      {
+        "name": "model-card-selection",
+        "value": "border-color 180ms ease-out, background-color 180ms ease-out",
+        "purpose": "Changes outline and fill on hover and selection. Disabled under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "workspace-columns",
+        "value": "850px"
+      },
+      {
+        "name": "compact-controls",
+        "value": "540px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary start button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Starts conversion for the selected model.",
+      "html": "<button type=\"button\" class=\"ds-start\">Start</button>",
+      "css": ".ds-start{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:6px 13px;border:1px solid;border-radius:999px;cursor:pointer;font:600 0.75rem/1.3 var(--studio-font, Poppins, 'Segoe UI', sans-serif);background:var(--studio-ink, #24232b);color:var(--studio-paper, #ffffff);border-color:var(--studio-ink, #24232b)}.ds-start:hover:not(:disabled){background:var(--studio-accent, #63469e);color:var(--studio-on-accent, #ffffff);border-color:var(--studio-accent, #63469e)}.ds-start:disabled{color:var(--studio-muted, #615e6b);opacity:.65;cursor:default}.ds-start:focus-visible { outline: 2px solid var(--studio-accent, #63469e); outline-offset: 3px; }"
+    },
+    {
+      "name": "Utility button",
+      "kind": "button",
+      "refersTo": "button-utility",
+      "description": "Secondary button for managing models and opening settings.",
+      "html": "<button type=\"button\" class=\"ds-utility\">Manage models</button>",
+      "css": ".ds-utility{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:6px 13px;border:1px solid;border-radius:999px;cursor:pointer;font:600 0.75rem/1.3 var(--studio-font, Poppins, 'Segoe UI', sans-serif);background:var(--studio-paper, #ffffff);color:var(--studio-ink, #24232b);border-color:var(--studio-line, #e6e2eb)}.ds-utility:is(:hover,[aria-pressed=true]):not(:disabled){color:var(--studio-accent, #63469e);border-color:var(--studio-accent, #63469e)}.ds-utility[aria-pressed=true]{background:var(--studio-tint, #f0ebfa)}.ds-utility:disabled{color:var(--studio-muted, #615e6b);opacity:.65;cursor:default}.ds-utility:focus-visible { outline: 2px solid var(--studio-accent, #63469e); outline-offset: 3px; }"
+    },
+    {
+      "name": "Selected sort option",
+      "kind": "chip",
+      "refersTo": "button-selected",
+      "description": "Pill options indicate which model sort order is active.",
+      "html": "<button type=\"button\" class=\"ds-sort\" aria-pressed=\"true\">Slot</button>",
+      "css": ".ds-sort{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:6px 13px;border:1px solid;border-radius:999px;cursor:pointer;font:600 0.75rem/1.3 var(--studio-font, Poppins, 'Segoe UI', sans-serif);background:var(--studio-paper, #ffffff);color:var(--studio-ink, #24232b);border-color:var(--studio-line, #e6e2eb)}.ds-sort:is(:hover,[aria-pressed=true]):not(:disabled){color:var(--studio-accent, #63469e);border-color:var(--studio-accent, #63469e)}.ds-sort[aria-pressed=true]{background:var(--studio-tint, #f0ebfa)}.ds-sort:disabled{color:var(--studio-muted, #615e6b);opacity:.65;cursor:default}.ds-sort:focus-visible { outline: 2px solid var(--studio-accent, #63469e); outline-offset: 3px; }"
+    },
+    {
+      "name": "Audio device field",
+      "kind": "input",
+      "refersTo": "settings-field",
+      "description": "Compact field for choosing the input device.",
+      "html": "<label class=\"ds-device-label\">Input device <select class=\"ds-device\"><option>Default microphone</option></select></label>",
+      "css": ".ds-device-label{color:var(--studio-muted, #615e6b);font:.875rem/1.55 var(--studio-font, Poppins, 'Segoe UI', sans-serif)}.ds-device{min-height:30px;padding:3px 7px;border:1px solid var(--studio-line, #e6e2eb);border-radius:7px;color:var(--studio-ink, #24232b);background:var(--studio-paper, #ffffff);font:inherit}.ds-device:focus-visible { outline: 2px solid var(--studio-accent, #63469e); outline-offset: 3px; }"
+    },
+    {
+      "name": "Selected voice card",
+      "kind": "card",
+      "refersTo": "model-card-selected",
+      "description": "An artwork slot with the selection check and model caption.",
+      "html": "<button type=\"button\" class=\"ds-model\" aria-pressed=\"true\"><span class=\"ds-art\"><svg aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 512 512\" fill=\"currentColor\"><path d=\"M0 256c0-17.7 14.3-32 32-32h32V96c0-17.7 14.3-32 32-32h128c17.7 0 32 14.3 32 32v288h64V224c0-17.7 14.3-32 32-32h128c17.7 0 32 14.3 32 32s-14.3 32-32 32h-96v160c0 17.7-14.3 32-32 32H224c-17.7 0-32-14.3-32-32V128h-64v128c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32z\"/></svg><span class=\"ds-check\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 448 512\" fill=\"currentColor\"><path d=\"M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7l233.4-233.3c12.5-12.5 32.8-12.5 45.2 0z\"/></svg></span></span><span class=\"ds-caption\"><strong>Voice model</strong><small>RVC</small></span></button>",
+      "css": ".ds-model{width:112px;display:flex;flex-direction:column;padding:0;text-align:left;border:1px solid var(--studio-line, #e6e2eb);border-radius:12px;background:var(--studio-paper, #ffffff);color:var(--studio-ink, #24232b);cursor:pointer;transition:border-color 180ms ease-out,background-color 180ms ease-out;font:.875rem/1.55 var(--studio-font, Poppins, 'Segoe UI', sans-serif)}\n.ds-model:is(:hover,[aria-pressed=true]){border-color:var(--studio-accent, #63469e)}.ds-model[aria-pressed=true]{background:var(--studio-tint, #f0ebfa)}\n.ds-art{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:1/.92;overflow:hidden;border-radius:11px 11px 0 0;background:var(--studio-tint, #f0ebfa);color:var(--studio-accent, #63469e)}\n.ds-check{position:absolute;top:8px;right:8px;display:grid;place-items:center;width:23px;aspect-ratio:1;border-radius:50%;background:var(--studio-accent, #63469e);color:var(--studio-on-accent, #ffffff)}\n.ds-caption{display:grid;gap:2px;padding:9px;font-size:.82rem}.ds-caption small{color:var(--studio-muted, #615e6b);font-size:.7rem}.ds-model:focus-visible { outline: 2px solid var(--studio-accent, #63469e); outline-offset: 3px; }@media(prefers-reduced-motion:reduce){.ds-model{transition:none}}"
+    },
+    {
+      "name": "Live status",
+      "kind": "custom",
+      "refersTo": "session-panel",
+      "description": "A green dot and status text indicate active conversion.",
+      "html": "<div class=\"ds-session\"><span class=\"ds-live\" role=\"status\">Converting</span></div>",
+      "css": ".ds-session{background:var(--studio-tint, #f0ebfa);border-radius:var(--studio-radius,16px);padding:clamp(16px,2vw,25px)}.ds-live{display:flex;align-items:center;gap:7px;color:var(--studio-live, #276849);font:600 .75rem var(--studio-font, Poppins, 'Segoe UI', sans-serif)}.ds-live::before{content:\"\";width:8px;aspect-ratio:1;border-radius:50%;background:currentColor}"
+    },
+    {
+      "name": "Model manager frame",
+      "kind": "custom",
+      "refersTo": "workspace-dialog",
+      "description": "Scrollable paper dialog with a sticky title.",
+      "html": "<section class=\"ds-dialog\" role=\"dialog\" aria-labelledby=\"ds-dialog-title\"><h3 id=\"ds-dialog-title\" class=\"ds-dialog-title\">Manage models</h3><div class=\"ds-dialog-body\"><button type=\"button\" class=\"ds-dialog-action\">Upload</button></div></section>",
+      "css": ".ds-dialog{width:min(100%,48rem);max-height:90dvh;overflow:auto;border-radius:var(--studio-radius,16px);background:var(--studio-paper, #ffffff);color:var(--studio-ink, #24232b);box-shadow:0 16px 54px rgb(25 18 39 / 24%);font:.875rem/1.55 var(--studio-font, Poppins, 'Segoe UI', sans-serif)}.ds-dialog-title{position:sticky;top:0;margin:0;padding:15px 20px;background:var(--studio-paper, #ffffff);border-bottom:1px solid var(--studio-line, #e6e2eb);font-size:1.12rem;font-weight:600}.ds-dialog-body{padding:12px 20px}.ds-dialog-action{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:6px 13px;border:1px solid;border-radius:999px;cursor:pointer;font:600 0.75rem/1.3 var(--studio-font, Poppins, 'Segoe UI', sans-serif);background:var(--studio-paper, #ffffff);color:var(--studio-ink, #24232b);border-color:var(--studio-line, #e6e2eb)}.ds-dialog-action:is(:hover,[aria-pressed=true]):not(:disabled){color:var(--studio-accent, #63469e);border-color:var(--studio-accent, #63469e)}.ds-dialog-action[aria-pressed=true]{background:var(--studio-tint, #f0ebfa)}.ds-dialog-action:disabled{color:var(--studio-muted, #615e6b);opacity:.65;cursor:default}.ds-dialog-action:focus-visible { outline: 2px solid var(--studio-accent, #63469e); outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Voice workspace",
+    "overview": "The workspace uses model artwork as the first cue for choosing a voice. White panels frame the library and settings, while lilac groups the active conversion tools. In dark mode, charcoal and plum preserve the same hierarchy.\n\nPoppins gives the display title and compact control labels a consistent voice. Fine borders group settings and a diffuse shadow separates dialogs from the workspace.",
+    "keyCharacteristics": [
+      "Model artwork from installed voices",
+      "A large centered title and compact utility header",
+      "Pill actions, rounded panels, and explicit selection states"
+    ],
+    "rules": [
+      {
+        "name": "The State Color Rule",
+        "body": "Use accent for selection and focus. Reserve green, amber, and rose for live state and timing feedback.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tonal Panels Rule",
+        "body": "Keep library, session, and settings panels flat. Use the ambient shadow on the outer dialog frame.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use the installed model artwork for the library thumbnail and selected portrait.",
+      "Do pair the selected treatment with a visible check on model cards and an accessible pressed state.",
+      "Do keep timing figures tabular as their values change."
+    ],
+    "donts": [
+      "Don't crop the selected portrait with the library thumbnail treatment."
+    ]
+  }
+}

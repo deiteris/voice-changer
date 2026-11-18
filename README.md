@@ -36,6 +36,7 @@
 - [Working with the source](#working-with-the-source)
   - [Prerequisites](#prerequisites)
   - [Setting up the environment](#setting-up-the-environment)
+  - [Model checkpoint safety](#model-checkpoint-safety)
   - [Running the server](#running-the-server)
   - [Building a package](#building-a-package)
 
@@ -83,22 +84,7 @@ Recommended requirement: Intel Core i5-10400F or AMD Ryzen 5 1600X.
 
 ### For GPU voice conversion
 
-Minimum VRAM required: 2GB (in FP32 mode), ~1GB (in FP16 mode, if supported).
-
-Minimum requirement:
-
-* An integrated graphics card: AMD Radeon Vega 7 (with AMD Ryzen 5 5600G) or later.
-* A dedicated graphics card: Nvidia GeForce GTX 900 Series or later, or AMD Radeon RX 400 series or later, or Intel Arc A300 series or later.
-
-> [!NOTE]
-> It is also possible to use Nvidia GeForce GTX 700 series GPUs. However, they can be used only with DirectML version.
-
-> [!WARNING]
-> The voice changer does not perform well with integrated Intel GPUs. This is a known issue that may be addressed in the future. You may proceed at your own risk and report issues or successful usage.
-
-Recommended requirement:
-
-A dedicated graphics card Nvidia GeForce RTX 20 Series or later, or AMD Radeon RX 6000 series or later, or Intel Arc A500 series or later.
+GPU support and performance depend on the selected backend, drivers, operating system, and model. The CUDA build uses CUDA 13.4 and requires a compatible NVIDIA driver. Verify compatibility for your hardware and driver before choosing a release. The Linux CUDA backend also requires a compatible FAISS GPU installation.
 
 ## Known issues
 
@@ -137,7 +123,7 @@ A dedicated graphics card Nvidia GeForce RTX 20 Series or later, or AMD Radeon R
 
 1. [If not installed] Download and install [VAC Lite by Muzychenko](https://software.muzychenko.net/freeware/vac470lite.zip).
 
-1. Navigate to the [releases section](https://github.com/deiteris/voice-changer/releases).
+1. Navigate to the [releases section](https://github.com/JohnRealNoob/voice-changer/releases).
 
 #### Check your hardware
 
@@ -153,20 +139,17 @@ A dedicated graphics card Nvidia GeForce RTX 20 Series or later, or AMD Radeon R
 
 #### For AMD/Intel/CPU users
 
-> [!TIP]
-> For AMD users, the recommended driver version is `24.6.1` or later.
-
 1. Download the `voice-changer-windows-amd64-dml.zip` ZIP file.
 
 1. Right-click the ZIP file. In the opened action menu select **7-Zip** > **Extract to "voice-changer-windows-amd64-dml\\"**.
 
 #### For Nvidia users
 
-1. Make sure your Nvidia driver version is `528.33` or later. [Click here](https://www.nvidia.com/en-gb/drivers/drivers-faq) to learn how to check your driver version.
+1. Install an NVIDIA driver compatible with CUDA 13.4. [NVIDIA explains how to check your driver version](https://www.nvidia.com/en-gb/drivers/drivers-faq).
 
-1. Download the `voice-changer-windows-amd64-cuda.zip.001` and `voice-changer-windows-amd64-cuda.zip.002` ZIP files and place them in the same folder.
+1. Download the CUDA ZIP asset from the release. If it is split into numbered parts, download every part into the same folder.
 
-1. Right-click the `voice-changer-windows-amd64-cuda.zip.001` ZIP file. In the opened action menu select **7-Zip** > **Extract to "voice-changer-windows-amd64-cuda\\"**. This will unpack **both** files, no need to unpack them separately.
+1. Extract the ZIP with 7-Zip. For a split archive, right-click the `.zip.001` part; 7-Zip reads the remaining parts automatically.
 
 The following examples demonstrate the unpacking process:
 
@@ -232,7 +215,9 @@ Once the download is finished, the voice changer will open the user interface us
 
 ### Running on Colab/Kaggle
 
-Refer to corresponding [Colab](https://github.com/deiteris/voice-changer/blob/master-custom/Colab_RealtimeVoiceChanger.ipynb) or [Kaggle](https://github.com/deiteris/voice-changer/blob/master-custom/Kaggle_RealtimeVoiceChanger.ipynb) notebooks in this repository and follow their instructions.
+Use the [Colab](Colab_RealtimeVoiceChanger.ipynb) or [Kaggle](Kaggle_RealtimeVoiceChanger.ipynb) notebook. Each downloads a compatible published Linux CUDA release from the configured GitHub repository, which defaults to this fork. If no compatible release has been published, choose a repository with one in the notebook.
+
+The notebooks prompt for an ngrok account token and a separate username and password to protect visitor access. Keep all three private and enter the visitor credentials in the browser. HRZN is disabled because its visitor access controls have not been verified. Never enable unsafe checkpoint loading when using a public tunnel.
 
 ## Troubleshooting
 
@@ -301,7 +286,7 @@ you encounter during usage.
 
 ### Prerequisites
 
-1. [If not installed] Download and install [Python 3.10](https://www.python.org/downloads/release/python-3108/).
+1. Install Python 3.12 for CPU, CUDA, or DirectML. For Linux ROCm, use Python 3.10 because the configured ONNX Runtime wheel targets CPython 3.10. Install [Node.js 22](https://nodejs.org/) to build the browser client.
 
 1. [If not installed] Download and install git.
 
@@ -311,12 +296,25 @@ you encounter during usage.
 
    ```
    python --version
-   Python 3.10.8
+   Python 3.12.x  # or 3.10.x for ROCm
    ```
 
 1. Clone the repository.
 
-1. Navigate to the `server` folder.
+1. Build the browser client from the repository root:
+
+   ```
+   cd client/lib
+   npm ci
+   npm run build:prod
+   cd ../demo
+   npm ci
+   npm run build:mod_copy
+   npm run build:prod
+   cd ../../server
+   ```
+
+   Rebuild it after client changes before running or packaging the server.
 
 ### Setting up the environment
 
@@ -366,6 +364,10 @@ you encounter during usage.
      pip install -r requirements-common.txt -r requirements-cpu.txt
      ```
 
+### Model checkpoint safety
+
+`ALLOW_UNSAFE_RVC_CHECKPOINTS` is off by default. Prefer safetensors or ONNX RVC models. Compatible `.pth` checkpoints can be loaded with restricted weights-only loading on PyTorch 2.10 or newer; older PyTorch versions cannot use that path. If a trusted local file requires unrestricted loading, set `ALLOW_UNSAFE_RVC_CHECKPOINTS=true` in the server environment or `.env` before starting. Unrestricted loading can execute code from the checkpoint: only opt in for trusted local files, and never use this setting with a public tunnel.
+
 ### Running the server
 
 Run the server by executing `main.py`.
@@ -388,10 +390,17 @@ Rebuild the browser client when updating the server. The current browser client 
    pip install --upgrade pip wheel setuptools pyinstaller
    ```
 
-1. Run the following command to build an executable:
+1. Set `BACKEND` to match the installed requirements: `cpu`, `cuda`, `dml`, or `rocm`. For example, in PowerShell:
 
-   ```
-   pyinstaller --clean -y --dist ./dist --workpath /tmp MMVCServerSIO.spec
+   ```powershell
+   $env:BACKEND = "dml"
+   pyinstaller --clean -y --dist ./dist --workpath ./build MMVCServerSIO.spec
    ```
 
-   This will output the resulting executable in the `dist` folder.
+   On Linux or macOS, for example:
+
+   ```sh
+   BACKEND=cpu pyinstaller --clean -y --dist ./dist --workpath ./build MMVCServerSIO.spec
+   ```
+
+   Choose the matching backend for your installation. The executable is placed in the `dist` folder.

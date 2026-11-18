@@ -13,256 +13,114 @@ export class ServerRestClient {
         this.serverUrl = serverUrl;
     }
 
-    getSettings = async () => {
-        const url = this.serverUrl + "/info";
-        const info = await new Promise<ServerInfo>((resolve) => {
-            const request = new Request(url, {
-                method: "GET",
-            });
-            fetch(request).then(async (response) => {
-                const json = (await response.json()) as ServerInfo;
-                resolve(json);
-            });
-        });
-        return info;
-    };
-
-    getPerformance = async () => {
-        const url = this.serverUrl + "/performance";
-        const info = await new Promise<number[]>((resolve) => {
-            const request = new Request(url, {
-                method: "GET",
-            });
-            fetch(request).then(async (response) => {
-                const json = (await response.json()) as number[];
-                resolve(json);
-            });
-        });
-        return info;
-    };
-
-    updateSettings = async (key: ServerSettingKey, val: string): Promise<ServerInfo> => {
-        const formData = new FormData();
-        formData.append("key", key);
-        formData.append("val", val);
-        const response = await fetch(this.serverUrl + "/update_settings", { method: "POST", body: formData });
-        const body = await response.json();
+    private request = async (path: string, options?: RequestInit) => {
+        const response = await fetch(this.serverUrl + path, options);
         if (!response.ok) {
-            throw new Error(body.message || `Request failed (${response.status})`);
+            let detail = "";
+            try {
+                const body = await response.json();
+                detail = typeof body.detail === "string" ? body.detail : (typeof body.message === "string" ? body.message : "");
+            } catch { /* non-JSON error response */ }
+            throw new Error(detail || `Request failed (${response.status})`);
         }
-        return body as ServerInfo;
+        return response;
     };
+
+    private json = async <T>(path: string, options?: RequestInit): Promise<T> => {
+        const body = await (await this.request(path, options)).json();
+        if (body == null) throw new Error("Server returned an empty response");
+        return body as T;
+    };
+
+    private postForm = <T>(path: string, values: Record<string, string>, signal?: AbortSignal) => {
+        const body = new FormData();
+        Object.entries(values).forEach(([key, value]) => body.append(key, value));
+        return this.json<T>(path, { method: "POST", body, signal });
+    };
+
+    getSettings = () => this.json<ServerInfo>("/info");
+    getPerformance = () => this.json<number[]>("/performance");
+    updateSettings = (key: ServerSettingKey, val: string) => this.postForm<ServerInfo>("/update_settings", { key, val });
 
     uploadFile2 = async (dir: string, file: File, onprogress: (progress: number, end: boolean) => void) =>
-        new Promise((resolve, reject) => {
-            const url = this.serverUrl + "/upload_file";
-            const filename = dir + file.name;
+        new Promise<{ status: number; body: string }>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            xhr.upload.addEventListener('progress', e => onprogress((e.loaded / e.total) * 100, false));
-            xhr.addEventListener('load', () => resolve({ status: xhr.status, body: xhr.responseText }));
-            xhr.addEventListener('error', () => reject(new Error('File upload failed')));
-            xhr.addEventListener('abort', () => reject(new Error('File upload aborted')));
-            xhr.open('POST', url, true);
+            xhr.upload.addEventListener("progress", e => {
+                if (e.lengthComputable) onprogress((e.loaded / e.total) * 100, false);
+            });
+            xhr.addEventListener("load", () => {
+                if (xhr.status < 200 || xhr.status >= 300) {
+                    let detail = "";
+                    try { const body = JSON.parse(xhr.responseText); detail = body.detail || body.message || ""; } catch { /* non-JSON response */ }
+                    reject(new Error(detail || `File upload failed (${xhr.status})`));
+                    return;
+                }
+                try {
+                    const result = JSON.parse(xhr.responseText);
+                    if (!result || result.status !== "OK") throw new Error(result?.msg || "File upload failed");
+                } catch (error) {
+                    reject(error instanceof Error ? error : new Error("File upload failed"));
+                    return;
+                }
+                resolve({ status: xhr.status, body: xhr.responseText });
+            });
+            xhr.addEventListener("error", () => reject(new Error("File upload failed")));
+            xhr.addEventListener("abort", () => reject(new Error("File upload aborted")));
+            xhr.open("POST", this.serverUrl + "/upload_file", true);
             const formData = new FormData();
             formData.append("file", file);
-            formData.append("filename", filename);
+            formData.append("filename", dir + file.name);
             xhr.send(formData);
         });
 
     uploadFile = async (buf: ArrayBuffer, filename: string, onprogress: (progress: number, end: boolean) => void) => {
-        const url = this.serverUrl + "/upload_file";
         onprogress(0, false);
         const size = 1024 * 1024;
         const fileChunks: FileChunk[] = [];
-        let index = 0; // index値
+        let index = 0;
         for (let cur = 0; cur < buf.byteLength; cur += size) {
-            fileChunks.push({
-                hash: index++,
-                chunk: buf.slice(cur, cur + size),
-            });
+            fileChunks.push({ hash: index++, chunk: buf.slice(cur, cur + size) });
         }
-
         const chunkNum = fileChunks.length;
-        // console.log("FILE_CHUNKS:", chunkNum, fileChunks)
-
-        while (true) {
-            const promises: Promise<void>[] = [];
-            for (let i = 0; i < 10; i++) {
-                const chunk = fileChunks.shift();
-                if (!chunk) {
-                    break;
-                }
-                const p = new Promise<void>((resolve) => {
-                    const formData = new FormData();
-                    formData.append("file", new Blob([chunk.chunk]));
-                    formData.append("filename", `${filename}_${chunk.hash}`);
-                    const request = new Request(url, {
-                        method: "POST",
-                        body: formData,
-                    });
-                    fetch(request).then(async (_response) => {
-                        // console.log(await response.text())
-                        resolve();
-                    });
-                });
-
-                promises.push(p);
-            }
-            await Promise.all(promises);
-            if (fileChunks.length == 0) {
-                break;
-            }
-            onprogress(Math.floor(((chunkNum - fileChunks.length) / (chunkNum + 1)) * 100), false);
+        while (fileChunks.length > 0) {
+            const chunks = fileChunks.splice(0, 10);
+            await Promise.all(chunks.map(async chunk => {
+                const body = new FormData();
+                body.append("file", new Blob([chunk.chunk]));
+                body.append("filename", `${filename}_${chunk.hash}`);
+                const result = await this.json<{ status: string; msg?: string }>("/upload_file", { method: "POST", body });
+                if (result.status !== "OK") throw new Error(result.msg || "File upload failed");
+            }));
+            if (fileChunks.length > 0) onprogress(Math.floor(((chunkNum - fileChunks.length) / (chunkNum + 1)) * 100), false);
         }
         return chunkNum;
     };
 
     concatUploadedFile = async (filename: string, chunkNum: number) => {
-        const url = this.serverUrl + "/concat_uploaded_file";
-        await new Promise<void>((resolve) => {
-            const formData = new FormData();
-            formData.append("filename", filename);
-            formData.append("filenameChunkNum", "" + chunkNum);
-            const request = new Request(url, {
-                method: "POST",
-                body: formData,
-            });
-            fetch(request).then(async (response) => {
-                console.log(await response.text());
-                resolve();
-            });
-        });
+        const body = new FormData();
+        body.append("filename", filename);
+        body.append("filenameChunkNum", String(chunkNum));
+        await this.request("/concat_uploaded_file", { method: "POST", body });
     };
 
-    loadModel = async (slot: number, isHalf: boolean, params: string = "{}") => {
-        if (isHalf == undefined || isHalf == null) {
-            console.warn("isHalf is invalid value", isHalf);
-            isHalf = false;
-        }
-        const url = this.serverUrl + "/load_model";
-        const info = new Promise<ServerInfo>(async (resolve) => {
-            const formData = new FormData();
-            formData.append("slot", "" + slot);
-            formData.append("isHalf", "" + isHalf);
-            formData.append("params", params);
-
-            const request = new Request(url, {
-                method: "POST",
-                body: formData,
-            });
-            const res = (await (await fetch(request)).json()) as ServerInfo;
-            resolve(res);
-        });
-        return info;
-    };
-
-    uploadAssets = async (params: string) => {
-        const url = this.serverUrl + "/upload_model_assets";
-        const info = new Promise<ServerInfo>(async (resolve) => {
-            const formData = new FormData();
-            formData.append("params", params);
-
-            const request = new Request(url, {
-                method: "POST",
-                body: formData,
-            });
-            const res = (await (await fetch(request)).json()) as ServerInfo;
-            resolve(res);
-        });
-        return info;
-    };
-
-    getModelType = async () => {
-        const url = this.serverUrl + "/model_type";
-        const info = new Promise<ServerInfo>(async (resolve) => {
-            const request = new Request(url, {
-                method: "GET",
-            });
-            const res = (await (await fetch(request)).json()) as ServerInfo;
-            resolve(res);
-        });
-        return info;
-    };
-
-    export2onnx = async () => {
-        const url = this.serverUrl + "/onnx";
-        const info = new Promise<OnnxExporterInfo>(async (resolve) => {
-            const request = new Request(url, {
-                method: "GET",
-            });
-            const res = (await (await fetch(request)).json()) as OnnxExporterInfo;
-            resolve(res);
-        });
-        return info;
-    };
-
-    mergeModel = async (req: MergeModelRequest) => {
-        const url = this.serverUrl + "/merge_model";
-        const info = new Promise<ServerInfo>(async (resolve) => {
-            const formData = new FormData();
-            formData.append("request", JSON.stringify(req));
-
-            const request = new Request(url, {
-                method: "POST",
-                body: formData,
-            });
-            const res = (await (await fetch(request)).json()) as ServerInfo;
-            console.log("RESPONSE", res);
-            resolve(res);
-        });
-        return info;
-    };
-
-    updateModelDefault = async () => {
-        const url = this.serverUrl + "/update_model_default";
-        const info = new Promise<ServerInfo>(async (resolve) => {
-            const request = new Request(url, {
-                method: "POST",
-            });
-            const res = (await (await fetch(request)).json()) as ServerInfo;
-            console.log("RESPONSE", res);
-            resolve(res);
-        });
-        return info;
-    };
-
-    updateModelInfo = async (slot: number, key: string, val: string) => {
-        const url = this.serverUrl + "/update_model_info";
-        const newData = { slot, key, val };
-
-        const info = new Promise<ServerInfo>(async (resolve) => {
-            const formData = new FormData();
-            formData.append("newData", JSON.stringify(newData));
-
-            const request = new Request(url, {
-                method: "POST",
-                body: formData,
-            });
-            const res = (await (await fetch(request)).json()) as ServerInfo;
-            console.log("RESPONSE", res);
-            resolve(res);
-        });
-        return info;
-    };
+    loadModel = (slot: number, isHalf: boolean, params: string = "{}") =>
+        this.postForm<{ status: "OK" }>("/load_model", { slot: String(slot), isHalf: String(isHalf ?? false), params });
+    uploadAssets = (params: string) => this.postForm<ServerInfo>("/upload_model_assets", { params });
+    getModelType = () => this.json<ServerInfo>("/model_type");
+    export2onnx = () => this.json<OnnxExporterInfo>("/onnx");
+    mergeModel = (req: MergeModelRequest) => this.postForm<ServerInfo>("/merge_model", { request: JSON.stringify(req) });
+    updateModelDefault = () => this.json<ServerInfo>("/update_model_default", { method: "POST" });
+    updateModelInfo = (slot: number, key: string, val: string) =>
+        this.postForm<ServerInfo>("/update_model_info", { newData: JSON.stringify({ slot, key, val }) });
 
     // VoiceChangerWorkletNodeから呼び出される
     //// Restで音声変換
-    setStream = async (streamId: string, active: boolean) => {
-        const body = new FormData();
-        body.append("stream_id", streamId);
-        body.append("active", String(active));
-        const response = await fetch(this.serverUrl + "/stream", { method: "POST", body, signal: AbortSignal.timeout(5000) });
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || "Could not update the voice stream.");
-        }
-    };
+    setStream = (streamId: string, active: boolean) =>
+        this.postForm<{ status: "OK" }>("/stream", { stream_id: streamId, active: String(active) }, AbortSignal.timeout(5000));
 
     postVoice = async (timestamp: number, buffer: ArrayBuffer, streamId?: string) => {
-        const url = this.serverUrl + "/test";
-
         const body = pack(streamId ? [timestamp, buffer, streamId] : [timestamp, buffer])
-        const res = await fetch(url, {
+        const res = await this.request("/test", {
             method: "POST",
             headers: {
                 Accept: "application/octet-stream",

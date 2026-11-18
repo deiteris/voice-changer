@@ -27,7 +27,7 @@ export const fileSelector = async (regex: string) => {
                 return null;
             }
 
-            if (regex != "" && target.files[0].type.match(regex)) {
+            if (regex != "" && !target.files[0].type.match(regex)) {
                 reject(`not target file type ${target.files[0].type}`);
                 return null;
             }

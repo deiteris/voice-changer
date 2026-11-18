@@ -4,13 +4,13 @@ title: "[ISSUE]: "
 body:
   - type: markdown
     attributes:
-      value: Please read our [FAQ](https://github.com/w-okada/voice-changer/blob/master/.github/FAQ.md) before making a bug report!
+      value: Please read our [FAQ](https://github.com/JohnRealNoob/voice-changer/blob/master-custom/.github/FAQ.md) before making a bug report!
   - type: input
     id: vc-client-version
     attributes:
       label: Voice Changer Version
       description: Downloaded File Name (.zip)
-      placeholder: MMVCServerSIO_xxx_yyyy-zzzz_v.x.x.x.x.zip
+      placeholder: voice-changer-windows-amd64-dml.zip
     validations:
       required: true
   - type: input
@@ -37,14 +37,14 @@ body:
         - label: Sample/Default Models are working
         - label: I've tried to change the Chunk Size
         - label: GUI was successfully launched
-        - label: I've read the [tutorial](https://github.com/w-okada/voice-changer/blob/master/tutorials/tutorial_rvc_en_latest.md)
+        - label: I've read the [setup and troubleshooting guide](https://github.com/JohnRealNoob/voice-changer#troubleshooting)
         - label: I've tried to extract to another folder (or re-extract) the .zip file
   - type: input
     id: vc-type
     attributes:
       label: Model Type
-      description: MMVC, so-vits-rvc, RVC, DDSP-SVC
-      placeholder: RVC
+      description: RVC model format, such as safetensors, ONNX, or PTH
+      placeholder: safetensors
     validations:
       required: true
   - type: textarea

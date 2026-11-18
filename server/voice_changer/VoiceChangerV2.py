@@ -23,7 +23,7 @@ class VoiceChangerV2:
         # 初期化
         self.settings = settings
 
-        self.block_frame = self.settings.serverReadChunkSize * 128
+        self.block_frame = self._get_block_frame()
         self.crossfade_frame = int(self.settings.crossFadeOverlapSize * self.settings.inputSampleRate)
         self.extra_frame = int(self.settings.extraConvertSize * self.settings.inputSampleRate)
         self.sola_search_frame = self.settings.inputSampleRate // 100
@@ -58,6 +58,7 @@ class VoiceChangerV2:
         if self.settings.recordIO:
             self.io_recorder.open(self.settings.inputSampleRate, self.settings.outputSampleRate)
 
+        self.block_frame = self._get_block_frame()
         self.extra_frame = int(self.settings.extraConvertSize * self.settings.inputSampleRate)
         self.crossfade_frame = int(self.settings.crossFadeOverlapSize * self.settings.inputSampleRate)
         self.sola_search_frame = self.settings.inputSampleRate // 100
@@ -80,8 +81,8 @@ class VoiceChangerV2:
         return {}
 
     def update_settings(self, key: str, val: Any, old_val: Any):
-        if key == "serverReadChunkSize":
-            self.block_frame = self.settings.serverReadChunkSize * 128
+        if key in {"serverReadChunkSize", "enableServerAudio"}:
+            self.block_frame = self._get_block_frame()
         elif key == 'gpu':
             # When changing GPU, need to re-allocate fade-in/fade-out buffers on different device
             self._generate_strength()
@@ -102,8 +103,14 @@ class VoiceChangerV2:
 
         if self.vcmodel is not None:
             self.vcmodel.update_settings(key, val, old_val)
-            if key in {'gpu', 'serverReadChunkSize', 'extraConvertSize', 'crossFadeOverlapSize', 'silenceFront', 'forceFp32'}:
+            if key in {'gpu', 'serverReadChunkSize', 'enableServerAudio', 'extraConvertSize', 'crossFadeOverlapSize', 'silenceFront', 'forceFp32'}:
                 self.vcmodel.realloc(self.block_frame, self.extra_frame, self.crossfade_frame, self.sola_search_frame)
+
+    def _get_block_frame(self):
+        block_frame = self.settings.serverReadChunkSize * 128
+        if self.settings.enableServerAudio:
+            block_frame = int((block_frame / 48000) * self.settings.inputSampleRate)
+        return block_frame
 
 
     def _generate_strength(self):
@@ -147,6 +154,9 @@ class VoiceChangerV2:
         if audio is None:
             # In case there's an actual silence - send full block with zeros
             return np.zeros(block_size, dtype=np.float32), vol
+
+        if self.crossfade_frame == 0:
+            return audio[:block_size].detach().cpu().numpy(), vol
 
         # SOLA algorithm from https://github.com/yxlllc/DDSP-SVC, https://github.com/liujing04/Retrieval-based-Voice-Conversion-WebUI
         conv_input = audio[

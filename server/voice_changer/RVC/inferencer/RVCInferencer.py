@@ -5,7 +5,7 @@ from safetensors import safe_open
 from voice_changer.common.deviceManager.DeviceManager import DeviceManager
 from voice_changer.RVC.inferencer.Inferencer import Inferencer
 from .rvc_models.infer_pack.models import SynthesizerTrnMs256NSFsid
-from voice_changer.common.SafetensorsUtils import load_model
+from voice_changer.common.SafetensorsUtils import load_model, load_rvc_checkpoint
 
 
 class RVCInferencer(Inferencer):
@@ -22,7 +22,7 @@ class RVCInferencer(Inferencer):
                 model = SynthesizerTrnMs256NSFsid(*config, is_half=is_half).to(dev)
                 load_model(model, cpt, strict=False)
         else:
-            cpt = torch.load(file, map_location=dev if dev.type == 'cuda' else 'cpu', weights_only=False)
+            cpt = load_rvc_checkpoint(file, map_location=dev if dev.type == 'cuda' else 'cpu')
             model = SynthesizerTrnMs256NSFsid(*cpt["config"], is_half=is_half).to(dev)
             model.load_state_dict(cpt["weight"], strict=False)
 

@@ -12,14 +12,14 @@ export const ModelSlotControl = () => {
         }
         const components = componentSettings.map((x, index) => {
             const c = generateComponent(x.name, x.options)
-            return <div key={`${x.name}_${index}`}>{c}</div>
+            return <div key={`${x.name}_${index}`} className={`studio-section studio-section-${x.name}`}>{c}</div>
         })
         return (
             <>
                 <div className="partition">
-                    <div className="partition-content">
+                    <main className="partition-content studio-workspace">
                         {components}
-                    </div>
+                    </main>
                 </div>
             </>
         )

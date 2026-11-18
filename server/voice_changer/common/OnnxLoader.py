@@ -20,7 +20,7 @@ def load_onnx_model(fpath: str, is_half: bool, quantize: bool = False) -> ModelP
     return onnx.load(fpath)
 
 def load_cached_quantized_model(fpath: str) -> ModelProto:
-    hashfile = f'{fpath}.xxh128.txt'
+    hashfile = f'{fpath}.q8.xxh128.txt'
     try:
         with open(hashfile, 'r', encoding='utf-8') as f:
             original_hash = f.read()
@@ -67,7 +67,7 @@ def _quantize(fpath: str, q8_fpath: str):
     )
 
 def load_cached_fp16_model(fpath: str) -> ModelProto:
-    hashfile = f'{fpath}.xxh128.txt'
+    hashfile = f'{fpath}.fp16.xxh128.txt'
     try:
         with open(hashfile, 'r', encoding='utf-8') as f:
             original_hash = f.read()

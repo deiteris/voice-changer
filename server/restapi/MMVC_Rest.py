@@ -1,11 +1,8 @@
 import logging
 
 from restapi.mods.trustedorigin import TrustedOriginMiddleware
-from fastapi import FastAPI, Request, Response, HTTPException
-from fastapi.routing import APIRoute
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.exceptions import RequestValidationError
-from typing import Callable
 from voice_changer.VoiceChangerManager import VoiceChangerManager
 
 from restapi.MMVC_Rest_Hello import MMVC_Rest_Hello
@@ -17,22 +14,6 @@ from const import TMP_DIR
 logger = logging.getLogger(__name__)
 
 
-class ValidationErrorLoggingRoute(APIRoute):
-    def get_route_handler(self) -> Callable:
-        original_route_handler = super().get_route_handler()
-
-        async def custom_route_handler(request: Request) -> Response:
-            try:
-                return await original_route_handler(request)
-            except RequestValidationError as e:  # type: ignore
-                logger.exception(e)
-                body = await request.body()
-                detail = {"errors": e.errors(), "body": body.decode()}
-                raise HTTPException(status_code=422, detail=detail)
-
-        return custom_route_handler
-
-
 class MMVC_Rest:
     _instance = None
 
@@ -42,7 +23,6 @@ class MMVC_Rest:
             logger.info("Initializing...")
             settings = get_settings()
             app_fastapi = FastAPI()
-            app_fastapi.router.route_class = ValidationErrorLoggingRoute
             app_fastapi.add_middleware(
                 TrustedOriginMiddleware,
                 allowed_origins=settings.allowed_origins,

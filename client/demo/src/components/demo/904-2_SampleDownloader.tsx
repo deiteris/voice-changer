@@ -59,12 +59,13 @@ export const SampleDownloaderScreen = (props: SampleDownloaderScreenProps) => {
                 files: [],
                 params: params,
             };
+            if (serverSetting.isUploading) return;
             try {
                 await serverSetting.uploadModel(uploadParams);
+                props.backToSlotManager();
             } catch (e) {
-                alert(e);
+                alert(e instanceof Error ? e.message : String(e));
             }
-            props.backToSlotManager();
             // setMode("localFile")
         };
         const options = serverSetting.serverSetting.sampleModels
@@ -155,7 +156,7 @@ export const SampleDownloaderScreen = (props: SampleDownloaderScreenProps) => {
                 </div>
             </div>
         );
-    }, [props.screen, props.targetIndex, lang, serverSetting.serverSetting]);
+    }, [props.screen, props.targetIndex, lang, serverSetting.serverSetting, serverSetting.isUploading, serverSetting.uploadModel]);
 
     return screen;
 };

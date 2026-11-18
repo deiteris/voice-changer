@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "client/demo/src/css/App.css"
+        ],
+        "createdAt": "2026-11-18T05:27:05.395Z",
+        "reason": "Codex: the border on .tooltip-text:before draws a zero-size triangular tooltip pointer; it is not a border accent on a rounded card."
+      }
+    ]
+  }
+}

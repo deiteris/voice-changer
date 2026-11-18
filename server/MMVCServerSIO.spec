@@ -29,10 +29,19 @@ if 'BUILD_NAME' in os.environ:
 datas += collect_data_files('onnxscript', include_py_files=True)
 
 binaries = []
+if backend == 'cuda' and sys.platform == 'linux':
+  # Faiss loads CUDA 12 wheel libraries dynamically, alongside Torch's CUDA 13.
+  faiss_data, faiss_binaries, faiss_imports = collect_all('faiss')
+  datas += faiss_data
+  binaries += faiss_binaries
+  for package in ('nvidia.cuda_runtime', 'nvidia.cublas', 'nvidia.curand', 'nvidia.cu13'):
+    binaries += collect_dynamic_libs(package, search_patterns=['*.so*'])
 if backend == 'dml':
   binaries += collect_dynamic_libs('torch_directml')
 
 hiddenimports = ['app']
+if backend == 'cuda' and sys.platform == 'linux':
+  hiddenimports += faiss_imports + ['nvidia.cuda_runtime', 'nvidia.cublas', 'nvidia.curand', 'nvidia.cu13']
 hiddenimports += collect_submodules('scipy') # Fix "ModuleNotFoundError: No module named 'scipy._lib.*'"
 
 tmp_ret = collect_all('onnxruntime') # Fix "ModuleNotFoundError: No module named 'onnxruntime.transformers.*'"

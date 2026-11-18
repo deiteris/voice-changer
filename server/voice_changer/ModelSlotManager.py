@@ -3,6 +3,7 @@ from data.ModelSlot import ModelSlots, loadAllSlotInfo, saveSlotInfo
 import json
 import os
 import shutil
+from pathlib import Path
 
 import logging
 
@@ -55,17 +56,32 @@ class ModelSlotManager:
         self._save_model_slot(slot_index, slotInfo)
 
     def store_model_assets(self, params: str):
-        paramsDict = json.loads(params)
-        uploadPath = os.path.join(UPLOAD_DIR, paramsDict["file"])
-        storeDir = os.path.join(self.model_dir, str(paramsDict["slot"]))
-        storePath = os.path.join(
-            storeDir,
-            paramsDict["file"],
-        )
+        data = json.loads(params)
+        slot = data["slot"]
+        filename = data["file"]
+        if type(slot) is not int or not 0 <= slot < len(self.modelSlots):
+            raise ValueError("Invalid model slot")
+        if data["name"] != "iconFile":
+            raise ValueError("Unsupported model asset")
+        if not isinstance(filename, str) or not filename or Path(filename).name != filename or "\\" in filename or filename in (".", ".."):
+            raise ValueError("Invalid asset filename")
+        upload_root = Path(UPLOAD_DIR).resolve()
+        source = (upload_root / filename).resolve()
+        model_root = Path(self.model_dir).resolve()
+        slot_dir = model_root / str(slot)
+        if slot_dir.is_symlink() or not slot_dir.is_dir():
+            raise ValueError("Invalid model slot directory")
+        slot_info = self._load_model_slot(slot)
+        protected = {"params.json", getattr(slot_info, "modelFile", ""), getattr(slot_info, "modelFileOnnx", ""), getattr(slot_info, "indexFile", "")}
+        if filename.lower() in {name.lower() for name in protected} or Path(filename).suffix.lower() not in (".png", ".jpg", ".jpeg", ".gif"):
+            raise ValueError("Invalid asset filename")
+        destination = slot_dir / filename
+        if not source.is_relative_to(upload_root) or not source.is_file() or destination.is_symlink():
+            raise ValueError("Invalid asset path")
+        shutil.copy2(source, destination)
+        slot_info.iconFile = filename
+        self._save_model_slot(slot, slot_info)
         try:
-            shutil.move(uploadPath, storePath)
-            slotInfo = self._load_model_slot(paramsDict["slot"])
-            setattr(slotInfo, paramsDict["name"], storePath)
-            self._save_model_slot(paramsDict["slot"], slotInfo)
-        except Exception as e:
-            logger.exception(e)
+            source.unlink()
+        except OSError:
+            logger.warning("Could not remove accepted uploaded asset: %s", source)

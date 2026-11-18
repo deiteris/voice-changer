@@ -1,100 +1,62 @@
-import React, { useMemo } from "react";
+import React from "react";
+import { faGithub } from "@fortawesome/free-brands-svg-icons";
+import { faRotateLeft, faWaveSquare } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useIndexedDB } from "@dannadori/voice-changer-client-js";
 import { INDEXEDDB_KEY_AUDIO_OUTPUT, isDesktopApp } from "../../../const";
 import { useAppRoot } from "../../../001_provider/001_AppRootProvider";
 import { useAppState } from "../../../001_provider/001_AppStateProvider";
-import { useIndexedDB } from "@dannadori/voice-changer-client-js";
-import { useMessageBuilder } from "../../../hooks/useMessageBuilder";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGithub } from "@fortawesome/free-brands-svg-icons";
 
 export type HeaderAreaProps = {
     mainTitle: string;
     subTitle: string;
 };
 
-export const HeaderArea = (props: HeaderAreaProps) => {
+const repositoryUrl = "https://github.com/deiteris/voice-changer";
+
+export const HeaderArea = ({ mainTitle, subTitle }: HeaderAreaProps) => {
     const { appGuiSettingState } = useAppRoot();
-    const messageBuilderState = useMessageBuilder();
     const { clearSetting } = useAppState();
-
     const { removeItem, removeDB } = useIndexedDB({ clientType: null });
+    const { version, edition } = appGuiSettingState;
 
-    useMemo(() => {
-        messageBuilderState.setMessage(__filename, "manual", { ja: "マニュアル", en: "manual" });
-        messageBuilderState.setMessage(__filename, "support", { ja: "支援", en: "Donation" });
-    }, []);
+    const onClearSettingClicked = async () => {
+        await clearSetting();
+        await removeItem(INDEXEDDB_KEY_AUDIO_OUTPUT);
+        await removeDB();
+        location.reload();
+    };
 
-    const githubLink = isDesktopApp() ? (
-        <span
-            className="link tooltip"
-            onClick={() => {
-                // @ts-ignore
-                window.electronAPI.openBrowser("https://github.com/deiteris/voice-changer");
-            }}
-        >
-            <FontAwesomeIcon icon={faGithub} fontSize="1.7em" />
-            <div className="tooltip-text">Github</div>
-        </span>
-    ) : (
-        <a className="link tooltip" href="https://github.com/deiteris/voice-changer" target="_blank" rel="noopener noreferrer">
-            <FontAwesomeIcon icon={faGithub} fontSize="1.7em" />
-            <div className="tooltip-text">Github</div>
-        </a>
-    );
-
-    // const manualLink = useMemo(() => {
-    //     return isDesktopApp() ? (
-    //         <span
-    //             className="link tooltip"
-    //             onClick={() => {
-    //                 // @ts-ignore
-    //                 window.electronAPI.openBrowser("https://github.com/deiteris/voice-changer/blob/master/tutorials/tutorial_rvc_ja_latest.md");
-    //             }}
-    //         >
-    //             <img src="./assets/icons/help-circle.svg" />
-    //             <div className="tooltip-text tooltip-text-100px">{messageBuilderState.getMessage(__filename, "manual")}</div>
-    //         </span>
-    //     ) : (
-    //         <a className="link tooltip" href="https://github.com/deiteris/voice-changer/blob/master/tutorials/tutorial_rvc_ja_latest.md" target="_blank" rel="noopener noreferrer">
-    //             <img src="./assets/icons/help-circle.svg" />
-    //             <div className="tooltip-text tooltip-text-100px">{messageBuilderState.getMessage(__filename, "manual")}</div>
-    //         </a>
-    //     );
-    // }, []);
-
-    const headerArea = useMemo(() => {
-        const onClearSettingClicked = async () => {
-            await clearSetting();
-            await removeItem(INDEXEDDB_KEY_AUDIO_OUTPUT);
-            await removeDB();
-            location.reload();
-        };
-
-        return (
-            <div className="headerArea">
-                <div className="title1">
-                    <span className="title">{props.mainTitle}</span>
-                    <span className="title-version">{props.subTitle}</span>
-                    <span className="title-version-number">{appGuiSettingState.version}</span>
-                    <span className="title-version-number">{appGuiSettingState.edition}</span>
+    return (
+        <>
+            <header className="studio-header">
+                <div className="studio-brand">
+                    <span className="studio-brand-mark"><FontAwesomeIcon icon={faWaveSquare} /></span>
+                    <span>Voice Changer</span>
                 </div>
-                <div className="icons">
-                    <span className="belongings">
-                        {githubLink}
-                        {/* manualLink */}
-                        {/* {licenseButton} */}
-                    </span>
-                    <span className="belongings">
-                        <div className="belongings-button" onClick={onClearSettingClicked}>
-                            clear setting
-                        </div>
-                        {/* <div className="belongings-button" onClick={onReloadClicked}>reload</div>
-                        <div className="belongings-button" onClick={onReselectVCClicked}>select vc</div> */}
-                    </span>
+                <div className="studio-header-actions">
+                    <span className="studio-version">{[version, edition].filter(Boolean).join(" · ")}</span>
+                    {isDesktopApp() ? (
+                        <button type="button" className="studio-button studio-icon-button" aria-label="GitHub" onClick={() => {
+                            // @ts-ignore
+                            window.electronAPI.openBrowser(repositoryUrl);
+                        }}>
+                            <FontAwesomeIcon icon={faGithub} />
+                        </button>
+                    ) : (
+                        <a className="studio-button studio-icon-button" aria-label="GitHub" href={repositoryUrl} target="_blank" rel="noopener noreferrer">
+                            <FontAwesomeIcon icon={faGithub} />
+                        </a>
+                    )}
+                    <button type="button" className="studio-button studio-reset-button" aria-label="Reset settings" onClick={onClearSettingClicked}>
+                        <FontAwesomeIcon icon={faRotateLeft} /> <span>Reset settings</span>
+                    </button>
                 </div>
+            </header>
+            <div className="studio-intro">
+                <h1>{mainTitle}</h1>
+                <p>{subTitle || "Choose a voice model, tune your sound, and convert live audio."}</p>
             </div>
-        );
-    }, [props.subTitle, props.mainTitle, appGuiSettingState.version, appGuiSettingState.edition]);
-
-    return headerArea;
+        </>
+    );
 };

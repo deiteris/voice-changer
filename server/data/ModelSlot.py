@@ -6,6 +6,7 @@ from dataclasses import dataclass, asdict, field
 import os
 import json
 import logging
+import tempfile
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -60,6 +61,8 @@ def loadSlotInfo(model_dir: str, slotIndex: int) -> ModelSlots:
         return ModelSlot()
     with open(jsonFile, encoding="utf-8") as f:
         jsonDict = json.load(f)
+    if not isinstance(jsonDict, dict):
+        raise ValueError("Model slot metadata must be an object")
     slotInfoKey = list(ModelSlot.__annotations__.keys())
     slotInfo = ModelSlot(**{k: v for k, v in jsonDict.items() if k in slotInfoKey})
     if slotInfo.voiceChangerType == "RVC":
@@ -72,7 +75,11 @@ def loadSlotInfo(model_dir: str, slotIndex: int) -> ModelSlots:
 def loadAllSlotInfo(model_dir: str):
     slotInfos: list[ModelSlots] = []
     for slotIndex in range(MAX_SLOT_NUM):
-        slotInfo = loadSlotInfo(model_dir, slotIndex)
+        try:
+            slotInfo = loadSlotInfo(model_dir, slotIndex)
+        except (OSError, ValueError, TypeError, UnicodeError):
+            logger.exception("Could not load model slot %s", slotIndex)
+            slotInfo = ModelSlot()
         slotInfo.slotIndex = slotIndex  # スロットインデックスは動的に注入
         slotInfos.append(slotInfo)
     return slotInfos
@@ -82,5 +89,12 @@ def saveSlotInfo(model_dir: str, slotIndex: int, slotInfo: ModelSlots):
     slotDir = os.path.join(model_dir, str(slotIndex))
     logger.info(f"SlotInfo::: {slotInfo}")
     slotInfoDict = asdict(slotInfo)
-    with open(os.path.join(slotDir, "params.json"), "w") as f:
-        json.dump(slotInfoDict, f, indent=4)
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=slotDir, delete=False) as f:
+            temp_path = f.name
+            json.dump(slotInfoDict, f, indent=4)
+        os.replace(temp_path, os.path.join(slotDir, "params.json"))
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)

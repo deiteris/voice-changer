@@ -7,7 +7,7 @@ import json
 import safetensors
 
 from data.ModelSlot import RVCModelSlot
-from voice_changer.common.SafetensorsUtils import convert_single
+from voice_changer.common.SafetensorsUtils import convert_single, load_rvc_checkpoint
 from voice_changer.utils.LoadModelParams import LoadModelParams
 from voice_changer.utils.ModelSlotGenerator import ModelSlotGenerator
 from settings import get_settings
@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 class RVCModelSlotGenerator(ModelSlotGenerator):
     @classmethod
-    def load_model(cls, props: LoadModelParams):
-        model_dir = get_settings().model_dir
+    def load_model(cls, props: LoadModelParams, model_dir: str | None = None):
+        model_dir = model_dir or get_settings().model_dir
 
         slotInfo: RVCModelSlot = RVCModelSlot()
         for file in props.files:
@@ -54,7 +54,7 @@ class RVCModelSlotGenerator(ModelSlotGenerator):
                 cpt['f0'] = int(cpt['f0'])
                 cpt['config'] = json.loads(cpt['config'])
         else:
-            cpt = torch.load(modelPath, map_location="cpu", weights_only=False)
+            cpt = load_rvc_checkpoint(modelPath, map_location="cpu")
         config_len = len(cpt["config"])
         version = cpt.get("version", "v1")
 

@@ -2,7 +2,7 @@ import json
 import torch
 from safetensors import safe_open
 from const import EnumInferenceTypes
-from voice_changer.common.SafetensorsUtils import load_model
+from voice_changer.common.SafetensorsUtils import load_model, load_rvc_checkpoint
 from voice_changer.common.deviceManager.DeviceManager import DeviceManager
 
 from voice_changer.RVC.inferencer.Inferencer import Inferencer
@@ -23,7 +23,7 @@ class WebUIInferencer(Inferencer):
                 model = SynthesizerTrnMsNSFsidM(**params, is_half=is_half).to(dev)
                 load_model(model, cpt, strict=False)
         else:
-            cpt = torch.load(file, map_location="cpu", weights_only=False)
+            cpt = load_rvc_checkpoint(file, map_location="cpu")
             model = SynthesizerTrnMsNSFsidM(**cpt["params"], is_half=is_half)
             model.load_state_dict(cpt["weight"], strict=False)
             model = model.to(dev)

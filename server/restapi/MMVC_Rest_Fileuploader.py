@@ -32,26 +32,33 @@ class MMVC_Rest_Fileuploader:
             res = upload_file(UPLOAD_DIR, file, filename)
             json_compatible_item_data = jsonable_encoder(res)
             return JSONResponse(content=json_compatible_item_data)
-        except Exception as e:
-            logger.exception(e)
+        except (ValueError, TypeError, KeyError) as e:
+            logger.warning("Invalid request: %s", e)
+            return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
+        except Exception:
+            logger.exception("Request failed")
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Request failed"})
 
     def get_info(self):
         try:
             info = self.voiceChangerManager.get_info()
             json_compatible_item_data = jsonable_encoder(info)
             return JSONResponse(content=json_compatible_item_data)
-        except Exception as e:
-            logger.exception(e)
+        except Exception:
+            logger.exception("Failed to retrieve server information")
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Request failed"})
 
     def post_update_settings(self, key: str = Form(...), val: Union[int, str, float] = Form(...)):
         try:
             info = self.voiceChangerManager.update_settings(key, val)
             json_compatible_item_data = jsonable_encoder(info)
             return JSONResponse(content=json_compatible_item_data)
-        except ValueError as e:
+        except (ValueError, TypeError, KeyError) as e:
+            logger.warning("Invalid request: %s", e)
             return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
-        except Exception as e:
-            logger.exception(e)
+        except Exception:
+            logger.exception("Request failed")
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Request failed"})
 
     async def post_load_model(
         self,
@@ -61,24 +68,30 @@ class MMVC_Rest_Fileuploader:
     ):
         try:
             paramDict = json.loads(params)
-            logger.info(f"paramDict", paramDict)
+            logger.info("Loading model request")
             loadModelparams = LoadModelParams(**paramDict)
             loadModelparams.files = [LoadModelParamFile(**x) for x in paramDict["files"]]
+            # Legacy clients send slot=0 in the form; the JSON slot is authoritative.
             # logger.info(f"paramDict", loadModelparams)
 
             info = await self.voiceChangerManager.load_model(loadModelparams)
             json_compatible_item_data = jsonable_encoder(info)
             return JSONResponse(content=json_compatible_item_data)
-        except Exception as e:
-            logger.exception(e)
+        except (ValueError, TypeError, KeyError) as e:
+            logger.warning("Invalid model request: %s", e)
+            return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
+        except Exception:
+            logger.exception("Model request failed")
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Model operation failed"})
 
     def get_onnx(self):
         try:
             info = self.voiceChangerManager.export2onnx()
             json_compatible_item_data = jsonable_encoder(info)
             return JSONResponse(content=json_compatible_item_data)
-        except Exception as e:
-            logger.exception(e)
+        except Exception:
+            logger.exception("Failed to export model")
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Model operation failed"})
 
     async def post_merge_models(self, request: str = Form(...)):
         try:
@@ -86,29 +99,42 @@ class MMVC_Rest_Fileuploader:
             info = await self.voiceChangerManager.merge_models(request)
             json_compatible_item_data = jsonable_encoder(info)
             return JSONResponse(content=json_compatible_item_data)
-        except Exception as e:
-            logger.exception(e)
+        except (ValueError, TypeError, KeyError) as e:
+            logger.warning("Invalid model request: %s", e)
+            return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
+        except Exception:
+            logger.exception("Failed to merge models")
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Model operation failed"})
 
     def post_update_model_default(self):
         try:
             info = self.voiceChangerManager.update_model_default()
             json_compatible_item_data = jsonable_encoder(info)
             return JSONResponse(content=json_compatible_item_data)
-        except Exception as e:
-            logger.exception(e)
+        except Exception:
+            logger.exception("Failed to update model defaults")
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Model operation failed"})
 
     def post_update_model_info(self, newData: str = Form(...)):
         try:
             info = self.voiceChangerManager.update_model_info(newData)
             json_compatible_item_data = jsonable_encoder(info)
             return JSONResponse(content=json_compatible_item_data)
-        except Exception as e:
-            logger.exception(e)
+        except (ValueError, TypeError, KeyError) as e:
+            logger.warning("Invalid model request: %s", e)
+            return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
+        except Exception:
+            logger.exception("Failed to update model information")
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Model operation failed"})
 
     def post_upload_model_assets(self, params: str = Form(...)):
         try:
             info = self.voiceChangerManager.upload_model_assets(params)
             json_compatible_item_data = jsonable_encoder(info)
             return JSONResponse(content=json_compatible_item_data)
-        except Exception as e:
-            logger.exception(e)
+        except (ValueError, TypeError, KeyError) as e:
+            logger.warning("Invalid model request: %s", e)
+            return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
+        except Exception:
+            logger.exception("Model request failed")
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Model operation failed"})

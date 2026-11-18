@@ -7,7 +7,7 @@
 msvc-runtime>=14.38; sys_platform=='win32'
 uvicorn
 pyOpenSSL
-numpy>=2.0.0
+numpy>=1.26.0
 python-socketio
 fastapi
 python-multipart
@@ -20,3 +20,5 @@ xxhash
 aiohttp
 certifi
 msgspec
+packaging
+tqdm

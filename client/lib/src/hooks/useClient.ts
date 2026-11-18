@@ -125,7 +125,9 @@ export const useClient = (props: UseClientProps): ClientState => {
                 setSetting({ ...setting, workletNodeSetting: { ...setting.workletNodeSetting, inputChunkNum: server.serverReadChunkSize } });
             }
         };
-        loadSettings();
+        loadSettings().catch((error) => {
+            setErrorMessage(error instanceof Error ? error.message : String(error));
+        });
     }, [voiceChangerClient]);
 
     // (2-1) クライアント初期化処理

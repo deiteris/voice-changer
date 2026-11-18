@@ -4,8 +4,11 @@
 # # bash Anaconda3-2022.10-Linux-x86_64.sh
 
 --extra-index-url https://download.pytorch.org/whl/rocm6.2
-torch
-torchaudio
+# Keep PyTorch on the ROCm 6.2 index instead of selecting a newer PyPI CUDA build.
+torch==2.5.1+rocm6.2
+torchaudio==2.5.1+rocm6.2
+# The ROCm 1.18 runtime predates NumPy 2 support.
+numpy<2
 faiss-cpu
 
 onnx

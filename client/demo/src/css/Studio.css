@@ -1,0 +1,743 @@
+:root {
+    color-scheme: light dark;
+    --studio-ink: #24232b;
+    --studio-muted: #615e6b;
+    --studio-page: #faf9fc;
+    --studio-paper: #ffffff;
+    --studio-line: #e6e2eb;
+    --studio-tint: #f0ebfa;
+    --studio-accent: #63469e;
+    --studio-on-accent: #ffffff;
+    --studio-live: #276849;
+    --studio-warning: #865516;
+    --studio-error: #a72e43;
+    --studio-radius: 16px;
+    --studio-font: "Poppins", "Segoe UI", sans-serif;
+    --text-color: var(--studio-ink);
+    --title-color: var(--studio-ink);
+    --company-color2: var(--studio-tint);
+    --company-color3: var(--studio-paper);
+    --dialog-background-tint: rgb(34 27 46 / 48%);
+    --dialog-background-color: var(--studio-paper);
+    --button-selector-active-border: 1px solid var(--studio-accent);
+    --button-selector-active: var(--studio-tint);
+    --button-selector-inactive-border: 1px solid var(--studio-line);
+    --button-selector-inactive: var(--studio-paper);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --studio-ink: #f3effa;
+        --studio-muted: #bcb4c8;
+        --studio-page: #19171f;
+        --studio-paper: #22202a;
+        --studio-line: #40394a;
+        --studio-tint: #30283f;
+        --studio-accent: #c3a8f2;
+        --studio-on-accent: #241935;
+        --studio-live: #8fdbb3;
+        --studio-warning: #f0c380;
+        --studio-error: #ff9eae;
+    }
+}
+
+body {
+    background: var(--studio-page);
+    scrollbar-color: var(--studio-line) var(--studio-page);
+}
+
+.main-body {
+    height: auto;
+    min-height: 100%;
+    padding: 0 clamp(16px, 4vw, 56px) 56px;
+    font: 0.875rem/1.55 var(--studio-font);
+    user-select: auto;
+}
+
+.main-body :is(button, input, select, textarea, a):focus-visible {
+    outline: 2px solid var(--studio-accent);
+    outline-offset: 3px;
+}
+
+.main-body ::selection {
+    background: var(--studio-accent);
+    color: var(--studio-on-accent);
+}
+
+.main-body :is(a, a:visited) {
+    color: var(--studio-accent);
+}
+
+.main-body .partition .studio-workspace {
+    display: grid;
+    max-width: 1240px;
+    margin-inline: auto;
+    gap: 24px;
+    overflow: visible;
+}
+
+.studio-section {
+    min-width: 0;
+}
+
+.studio-header {
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 1px solid var(--studio-line);
+}
+
+.studio-brand,
+.studio-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.studio-brand {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
+.studio-brand-mark {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    aspect-ratio: 1;
+    color: var(--studio-paper);
+    background: var(--studio-ink);
+    border-radius: 11px;
+}
+
+.studio-version {
+    color: var(--studio-muted);
+    font-size: 0.75rem;
+}
+
+.studio-intro {
+    padding: clamp(34px, 5vw, 68px) 0 clamp(20px, 3vw, 40px);
+    text-align: center;
+}
+
+.studio-intro h1 {
+    font-size: clamp(2.35rem, 5.1vw, 4.65rem);
+    line-height: 1.04;
+    letter-spacing: -0.04em;
+    font-weight: 600;
+    text-wrap: balance;
+}
+
+.studio-intro p {
+    margin: 16px auto 0;
+    max-width: 52ch;
+    color: var(--studio-muted);
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+    text-wrap: balance;
+}
+
+.studio-section-heading {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.studio-workspace h2 {
+    font-size: clamp(1.2rem, 2vw, 1.56rem);
+    line-height: 1.25;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+}
+
+.studio-section-heading p {
+    margin-top: 4px;
+    color: var(--studio-muted);
+    font-size: 0.78rem;
+}
+
+.studio-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 6px 13px;
+    background: var(--studio-paper);
+    color: var(--studio-ink);
+    border: 1px solid var(--studio-line);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.studio-header .studio-icon-button {
+    width: 38px;
+    padding: 0;
+    color: var(--studio-ink);
+    font-size: 1rem;
+}
+
+.studio-button:is(:hover, [aria-pressed="true"]):not(:disabled) {
+    color: var(--studio-accent);
+    border-color: var(--studio-accent);
+}
+
+.studio-button:disabled {
+    color: var(--studio-muted);
+    opacity: 0.65;
+    cursor: default;
+}
+
+.studio-button.studio-primary-button {
+    background: var(--studio-ink);
+    color: var(--studio-paper);
+    border-color: var(--studio-ink);
+}
+
+.studio-button.studio-primary-button:hover:not(:disabled) {
+    background: var(--studio-accent);
+    border-color: var(--studio-accent);
+    color: var(--studio-on-accent);
+}
+
+.voice-library,
+.studio-session,
+.studio-settings-grid .config-area {
+    padding: clamp(16px, 2vw, 25px);
+    border-radius: var(--studio-radius);
+    min-width: 0;
+}
+
+.voice-library,
+.studio-settings-grid .config-area {
+    background: var(--studio-paper);
+    border: 1px solid var(--studio-line);
+}
+
+.voice-library-sort {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.voice-library-sort .studio-button[aria-pressed="true"],
+.studio-transport .studio-button[aria-pressed="true"] {
+    background: var(--studio-tint);
+}
+
+.voice-library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 112px), 1fr));
+    max-height: 352px;
+    overflow: auto;
+    gap: 10px;
+    padding: 4px;
+    margin: -4px;
+}
+
+.voice-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 0;
+    border: 1px solid var(--studio-line);
+    border-radius: 12px;
+    background: var(--studio-paper);
+    color: var(--studio-ink);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 180ms ease-out, background-color 180ms ease-out;
+}
+
+.voice-card:hover,
+.voice-card[aria-pressed="true"] {
+    border-color: var(--studio-accent);
+}
+
+.voice-card[aria-pressed="true"] {
+    background: var(--studio-tint);
+}
+
+.voice-card-art {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 1 / 0.92;
+    overflow: hidden;
+    border-radius: 11px 11px 0 0;
+    background: var(--studio-tint);
+    color: var(--studio-accent);
+    font-size: 1.4rem;
+}
+
+.voice-card-art img,
+.studio-portrait-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.voice-card-art img {
+    position: absolute;
+    inset: 0;
+}
+
+.voice-card-check {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: grid;
+    place-items: center;
+    width: 23px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--studio-accent);
+    color: var(--studio-on-accent);
+    font-size: 0.7rem;
+}
+
+.voice-card-caption {
+    display: grid;
+    gap: 2px;
+    width: 100%;
+    padding: 9px;
+}
+
+.voice-card-caption strong {
+    overflow: hidden;
+    font-size: 0.82rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.voice-card-caption small,
+.studio-portrait-meta {
+    font-size: 0.7rem;
+    color: var(--studio-muted);
+}
+
+.voice-library-empty,
+.studio-portrait-empty {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 12px;
+    min-height: 150px;
+    padding: 16px;
+    color: var(--studio-muted);
+    text-align: center;
+}
+
+.voice-library-empty > svg,
+.studio-portrait-empty > svg {
+    color: var(--studio-accent);
+    font-size: 1.5rem;
+}
+
+.studio-session {
+    background: var(--studio-tint);
+}
+
+.studio-session-state {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--studio-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.studio-session-state::before {
+    content: "";
+    width: 8px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.studio-session-state[data-live="true"] {
+    color: var(--studio-live);
+}
+
+.studio-session .character-area {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    align-items: start;
+    gap: clamp(14px, 2vw, 25px);
+    padding: 0;
+}
+
+.studio-portrait-art {
+    aspect-ratio: 1 / 0.76;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--studio-paper);
+}
+
+.studio-portrait-art img {
+    display: block;
+    object-fit: contain;
+}
+
+.studio-portrait-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    margin: 7px 0 10px;
+}
+
+.studio-signal {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+}
+
+.studio-signal dt {
+    color: var(--studio-muted);
+    font-size: 0.69rem;
+}
+
+.studio-signal dd {
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.studio-signal [data-timing="over"] { color: var(--studio-error); }
+.studio-signal [data-timing="near"] { color: var(--studio-warning); }
+.studio-signal [data-timing="within"] { color: var(--studio-live); }
+
+.studio-performance-chart {
+    position: relative;
+    height: 36px;
+    margin-top: 6px;
+}
+
+.studio-model-name {
+    font-size: 1.3rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
+}
+
+.studio-transport {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 6px;
+}
+
+.studio-session .character-area-control {
+    flex-wrap: wrap;
+}
+
+.studio-session .character-area .character-area-control-area .character-area-control .character-area-control-title {
+    width: 4.75rem;
+    color: var(--studio-muted);
+    font-weight: 600;
+}
+
+.studio-session .character-area .character-area-control-area .character-area-control .character-area-control-field {
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.studio-session .character-area .character-area-control-area .character-area-control .character-area-control-field
+.character-area-slider-control .character-area-slider-control-slider {
+    width: var(--studio-slider-width, clamp(70px, 12vw, 140px));
+}
+
+.studio-session .character-area-slider-control-slider input[type="range"] {
+    display: block;
+    width: 100%;
+}
+
+.main-body input[type="range"],
+.main-body input[type="checkbox"],
+.main-body input[type="radio"] {
+    accent-color: var(--studio-accent);
+}
+
+.studio-settings-grid {
+    display: grid;
+    gap: 16px;
+    margin-top: 14px;
+}
+
+.studio-settings-grid .config-area {
+    flex-direction: column;
+    gap: 16px;
+}
+
+.studio-settings-grid h3 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.studio-settings-grid .config-area .config-sub-area {
+    gap: 8px;
+    min-width: 0;
+}
+
+.studio-settings-grid .config-area .config-sub-area-control {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px 9px;
+}
+
+.studio-settings-grid .config-area .config-sub-area-control :is(.config-sub-area-control-field, .config-sub-area-control-field-long) {
+    flex: 1 1 min(100%, 12rem);
+    width: auto;
+    min-width: 0;
+}
+
+.studio-settings-grid .config-sub-area-control :is(.config-sub-area-buttons, .config-sub-area-noise-container, .config-sub-area-control-field-wav-file) {
+    flex-wrap: wrap;
+}
+
+.main-body :is(select, input[type="text"], input[type="number"], textarea) {
+    max-width: 100%;
+    min-height: 30px;
+    padding: 3px 7px;
+    border: 1px solid var(--studio-line);
+    border-radius: 7px;
+    color: var(--studio-ink);
+    background: var(--studio-paper);
+}
+
+.main-body audio {
+    max-width: 100%;
+}
+
+.main-body :is(.dialog-container, .dialog-container2) {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 12px;
+}
+
+.main-body :is(.dialog-container, .dialog-container2) .dialog-frame {
+    width: min(100%, 48rem);
+    max-height: 90dvh;
+    border: 0;
+    border-radius: var(--studio-radius);
+    background: var(--studio-paper);
+    box-shadow: 0 16px 54px rgb(25 18 39 / 24%);
+    overflow: auto;
+}
+
+.main-body .dialog-container .dialog-frame > .dialog-frame {
+    width: 100%;
+    max-height: none;
+    box-shadow: none;
+    flex-shrink: 0;
+}
+
+.main-body :is(.dialog-container, .dialog-container2) .dialog-frame .dialog-title {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin: 0;
+    padding: 15px 20px;
+    text-align: left;
+    font-size: 1.12rem;
+    font-weight: 600;
+    background: var(--studio-paper);
+    color: var(--studio-ink);
+    border-bottom: 1px solid var(--studio-line);
+}
+
+.main-body :is(.dialog-container, .dialog-container2) .dialog-frame .dialog-fixed-size-content {
+    max-height: none;
+}
+
+.main-body .dialog-frame .dialog-fixed-size-content .model-slot-container .model-slot {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    min-height: 78px;
+    height: auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--studio-line);
+}
+
+.main-body .dialog-frame .dialog-fixed-size-content .model-slot-container .model-slot :is(.model-slot-icon, .model-slot-icon-pointable) {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.studio-slot-icon-button {
+    display: grid;
+    align-self: center;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.studio-slot-placeholder {
+    display: grid;
+    place-items: center;
+    background: var(--studio-tint);
+    color: var(--studio-accent);
+    font-size: 1.1rem;
+}
+
+.main-body .dialog-frame .dialog-fixed-size-content .model-slot-container .model-slot .model-slot-detail {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+}
+
+.main-body .dialog-frame .dialog-fixed-size-content .model-slot-container .model-slot .model-slot-detail-row {
+    gap: 5px;
+}
+
+.main-body .dialog-frame .dialog-fixed-size-content .model-slot-container .model-slot .model-slot-detail-row > :nth-child(2) {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.main-body .dialog-frame .dialog-fixed-size-content .model-slot-container .model-slot .model-slot-buttons {
+    width: auto;
+    gap: 4px;
+    border: 0;
+    flex-wrap: wrap;
+}
+
+.main-body .advanced-setting-container .advanced-setting-container-row {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px 10px;
+}
+
+.main-body .advanced-setting-container .advanced-setting-container-row
+:is(.advanced-setting-container-row-title, .advanced-setting-container-row-title-long) {
+    flex: 1 1 11rem;
+    width: auto;
+}
+
+.main-body .advanced-setting-container .advanced-setting-container-row .advanced-setting-container-row-field {
+    flex: 1 1 13rem;
+    width: auto;
+    min-width: 0;
+}
+
+.main-body .dialog-frame .dialog-fixed-size-content .model-slot-container .model-slot .model-slot-buttons .model-slot-button,
+.main-body .dialog-frame .body-button-container .body-button,
+.studio-settings-grid .config-area .config-sub-area .config-sub-area-control .config-sub-area-control-field .config-sub-area-buttons
+:is(.config-sub-area-button, .config-sub-area-button-active) {
+    min-height: 28px;
+    height: auto;
+    width: auto;
+    padding: 3px 9px;
+    border: 1px solid var(--studio-line);
+    border-radius: 999px;
+    color: var(--studio-ink);
+    background: var(--studio-paper);
+}
+
+.studio-settings-grid .config-area .config-sub-area .config-sub-area-control .config-sub-area-control-field .config-sub-area-buttons .config-sub-area-button-active {
+    border-color: var(--studio-accent);
+    background: var(--studio-tint);
+}
+
+@media (min-width: 850px) {
+    .studio-workspace:has(> .studio-section-modelSlotArea):has(> .studio-section-characterArea) {
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        align-items: start;
+    }
+
+    .studio-section:not(.studio-section-modelSlotArea, .studio-section-characterArea) {
+        grid-column: 1 / -1;
+    }
+
+    .studio-settings-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 540px) {
+    .studio-header {
+        padding: 10px 0;
+        min-height: 62px;
+    }
+
+    .studio-version {
+        display: none;
+    }
+
+    .studio-reset-button {
+        width: 38px;
+        padding: 0;
+    }
+
+    .studio-reset-button span {
+        display: none;
+    }
+
+    .voice-library-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        max-height: 280px;
+    }
+
+    .voice-card-caption {
+        padding: 7px;
+    }
+
+    .studio-section-heading {
+        margin-bottom: 14px;
+    }
+
+    .studio-session .character-area {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .studio-session .character-area-control-area {
+        grid-row: 1;
+    }
+
+    .studio-session {
+        --studio-slider-width: clamp(70px, calc(100vw - 256px), 130px);
+    }
+
+    .studio-portrait-art {
+        aspect-ratio: 2.2;
+    }
+
+    .main-body .dialog-frame .dialog-fixed-size-content .model-slot-container .model-slot {
+        grid-template-columns: 48px minmax(0, 1fr);
+    }
+
+    .main-body .dialog-frame .dialog-fixed-size-content .model-slot-container .model-slot :is(.model-slot-icon, .model-slot-icon-pointable) {
+        width: 48px;
+        height: 48px;
+    }
+
+    .main-body .dialog-frame .dialog-fixed-size-content .model-slot-container .model-slot .model-slot-buttons {
+        grid-column: 2;
+        flex-direction: row;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .voice-card {
+        transition: none;
+    }
+}

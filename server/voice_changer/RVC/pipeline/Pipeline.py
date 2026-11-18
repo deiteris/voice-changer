@@ -119,6 +119,9 @@ class Pipeline:
             WINDOW_SIZE,
         )
         f0 *= 2 ** ((f0_up_key - formant_shift) / 12)
+        # Invalid pitch values cannot be used as embedding indices or frequencies.
+        # Treat them, and negative frequencies, as unvoiced frames.
+        f0 = torch.nan_to_num(f0, nan=0.0, posinf=0.0, neginf=0.0).clamp_min_(0)
 
         f0_mel = 1127.0 * torch.log(1.0 + f0 / 700.0)
         f0_mel = torch.clip(
@@ -139,19 +142,25 @@ class Pipeline:
         return pitch.unsqueeze(0), pitchf.unsqueeze(0)
 
     def _search_index(self, audio: torch.Tensor, top_k: int = 1):
-        if top_k == 1:
-            _, ix = self.index.search(audio if self.use_gpu_index else audio.detach().cpu(), 1)
-            ix = ix.to(self.device)
-            return self.index_reconstruct[ix.squeeze()]
-
         score, ix = self.index.search(audio if self.use_gpu_index else audio.detach().cpu(), k=top_k)
-        score, ix = (
-            score.to(self.device),
-            ix.to(self.device),
-        )
-        weight = torch.square(1 / score)
-        weight /= weight.sum(dim=1, keepdim=True)
-        return torch.sum(self.index_reconstruct[ix] * weight.unsqueeze(2), dim=1)
+        score, ix = score.to(self.device), ix.to(self.device)
+        valid = (ix >= 0) & (ix < self.index_reconstruct.shape[0]) & torch.isfinite(score) & (score >= 0)
+        if self.index_reconstruct.shape[0] == 0:
+            return audio.to(self.device)
+        # Exact matches share the weight; otherwise normalize inverse-square distances.
+        exact = valid & (score == 0)
+        has_exact = exact.any(dim=1, keepdim=True)
+        safe_score = torch.where(valid & (score > 0), score, torch.ones_like(score))
+        # Scaling by each row's minimum avoids overflow without changing relative weights.
+        minimum = torch.where(valid & (score > 0), score, torch.inf).amin(dim=1, keepdim=True)
+        minimum = torch.where(torch.isfinite(minimum), minimum, torch.ones_like(minimum))
+        weights = torch.where(valid & (score > 0), (minimum / safe_score).square(), torch.zeros_like(score))
+        weights = torch.where(has_exact, exact.to(score.dtype), weights)
+        total = weights.sum(dim=1, keepdim=True)
+        weights = weights / total.clamp_min(torch.finfo(weights.dtype).tiny)
+        vectors = self.index_reconstruct[ix.clamp(0, self.index_reconstruct.shape[0] - 1)]
+        result = torch.sum(vectors * weights.unsqueeze(-1), dim=1)
+        return torch.where(total > 0, result, audio.to(self.device))
 
     def _upscale(self, feats: torch.Tensor) -> torch.Tensor:
         if self.onnx_upscaler is not None:

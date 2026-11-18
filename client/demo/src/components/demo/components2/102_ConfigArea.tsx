@@ -14,19 +14,22 @@ export type ConfigAreaProps = {
 export const ConfigArea = (props: ConfigAreaProps) => {
     const configArea = useMemo(() => {
         return (
-            <>
-                <div className="config-area">
-                    <QualityArea detectors={props.detectors}></QualityArea>
-                    <ConvertArea inputChunkNums={props.inputChunkNums}></ConvertArea>
+            <section className="studio-settings" aria-labelledby="studio-settings-heading">
+                <h2 id="studio-settings-heading">Audio settings</h2>
+                <div className="studio-settings-grid">
+                    <section className="config-area">
+                        <h3>Devices &amp; recording</h3>
+                        <DeviceArea />
+                        <RecorderArea />
+                    </section>
+                    <section className="config-area">
+                        <h3>Conversion quality</h3>
+                        <QualityArea detectors={props.detectors} />
+                        <ConvertArea inputChunkNums={props.inputChunkNums} />
+                        <MoreActionArea />
+                    </section>
                 </div>
-                <div className="config-area">
-                    <DeviceArea></DeviceArea>
-                    <RecorderArea></RecorderArea>
-                </div>
-                <div className="config-area">
-                    <MoreActionArea></MoreActionArea>
-                </div>
-            </>
+            </section>
 
         )
     }, [])

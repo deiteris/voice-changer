@@ -57,7 +57,6 @@ export const useStateControlCheckbox = (className: string, changeCallback?: (new
         const checkboxes = document.querySelectorAll(`.${className}`);
         // (1) On/Off同期
         checkboxes.forEach((x) => {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             x.onchange = (ev) => {
                 updateState(ev.target.checked);
@@ -66,7 +65,6 @@ export const useStateControlCheckbox = (className: string, changeCallback?: (new
         // (2) 全エレメントoff
         const removers = document.querySelectorAll(`.${className}-remover`);
         removers.forEach((x) => {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             x.onclick = (ev) => {
                 if (ev.target.className.indexOf(`${className}-remover`) > 0) {
@@ -81,7 +79,6 @@ export const useStateControlCheckbox = (className: string, changeCallback?: (new
         return (newVal: boolean) => {
             const currentCheckboxes = document.querySelectorAll(`.${className}`);
             currentCheckboxes.forEach((y) => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 y.checked = newVal;
             });

@@ -124,32 +124,35 @@ export const useServerSetting = (props: UseServerSettingProps): ServerSettingSta
             setUploadProgress(0);
             setIsUploading(true);
 
-            if (setting.isSampleMode == false) {
-                const progRate = 1 / setting.files.length;
-                for (let i = 0; i < setting.files.length; i++) {
-                    const progOffset = 100 * i * progRate;
-                    await _uploadFile2(
-                        setting.files[i].file,
-                        (progress: number, _end: boolean) => {
-                            setUploadProgress(progress * progRate + progOffset);
-                        },
-                        setting.files[i].dir
-                    );
+            try {
+                if (setting.isSampleMode == false) {
+                    const progRate = 1 / setting.files.length;
+                    for (let i = 0; i < setting.files.length; i++) {
+                        const progOffset = 100 * i * progRate;
+                        await _uploadFile2(
+                            setting.files[i].file,
+                            (progress: number, _end: boolean) => {
+                                setUploadProgress(progress * progRate + progOffset);
+                            },
+                            setting.files[i].dir
+                        );
+                    }
                 }
+                const params: ModelUploadSettingForServer = {
+                    ...setting,
+                    files: setting.files.map((f) => {
+                        return { name: f.file.name, kind: f.kind, dir: f.dir };
+                    }),
+                };
+
+                const loadPromise = props.voiceChangerClient.loadModel(setting.slot, false, JSON.stringify(params));
+                await loadPromise;
+
+                await reloadServerInfo();
+            } finally {
+                setUploadProgress(0);
+                setIsUploading(false);
             }
-            const params: ModelUploadSettingForServer = {
-                ...setting,
-                files: setting.files.map((f) => {
-                    return { name: f.file.name, kind: f.kind, dir: f.dir };
-                }),
-            };
-
-            const loadPromise = props.voiceChangerClient.loadModel(0, false, JSON.stringify(params));
-            await loadPromise;
-
-            setUploadProgress(0);
-            setIsUploading(false);
-            reloadServerInfo();
         };
     }, [props.voiceChangerClient]);
 
@@ -166,7 +169,7 @@ export const useServerSetting = (props: UseServerSettingProps): ServerSettingSta
                 file: file.name,
             };
             await props.voiceChangerClient.uploadAssets(JSON.stringify(assetUploadSetting));
-            reloadServerInfo();
+            await reloadServerInfo();
         };
     }, [props.voiceChangerClient]);
 

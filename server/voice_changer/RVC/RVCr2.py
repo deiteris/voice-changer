@@ -156,7 +156,7 @@ class RVCr2(VoiceChangerModel):
 
         self.skip_head = extra_frame_16k // WINDOW_SIZE
         self.return_length = self.convert_feature_size_16k - self.skip_head
-        self.silence_front = extra_frame_16k - (WINDOW_SIZE * 5) if self.settings.silenceFront else 0
+        self.silence_front = max(0, extra_frame_16k - (WINDOW_SIZE * 5)) if self.settings.silenceFront else 0
 
         # Audio buffer to measure volume between chunks
         audio_buffer_size = block_frame_16k + crossfade_frame_16k

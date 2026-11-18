@@ -112,7 +112,7 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
 
         // appState.serverSetting.uploadProgress == 0 ? `loading model...(wait about 20sec)` : `processing.... ${appState.serverSetting.uploadProgress.toFixed(1)}%` : ""
 
-        const buttonLabel = serverSetting.uploadProgress == 0 ? messageBuilderState.getMessage(__filename, "upload") : messageBuilderState.getMessage(__filename, "uploading") + `(${serverSetting.uploadProgress.toFixed(1)}%)`;
+        const buttonLabel = serverSetting.isUploading == false ? messageBuilderState.getMessage(__filename, "upload") : messageBuilderState.getMessage(__filename, "uploading") + `(${serverSetting.uploadProgress.toFixed(1)}%)`;
         return (
             <div className="dialog-frame">
                 <div className="dialog-title">File Uploader</div>
@@ -148,12 +148,14 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
                                 if (!uploadSetting) {
                                     return;
                                 }
-                                if (serverSetting.uploadProgress != 0) {
+                                if (serverSetting.isUploading) {
                                     return;
                                 }
                                 if (checkModelSetting(uploadSetting)) {
                                     serverSetting.uploadModel(uploadSetting).then(() => {
                                         props.backToSlotManager();
+                                    }).catch((error) => {
+                                        alert(error instanceof Error ? error.message : String(error));
                                     });
                                 } else {
                                     const errorMessage = messageBuilderState.getMessage(__filename, "alert-model-file");
@@ -167,7 +169,7 @@ export const FileUploaderScreen = (props: FileUploaderScreenProps) => {
                 </div>
             </div>
         );
-    }, [props.screen, props.targetIndex, voiceChangerType, uploadSetting, serverSetting.uploadModel, serverSetting.uploadProgress]);
+    }, [props.screen, props.targetIndex, voiceChangerType, uploadSetting, serverSetting.uploadModel, serverSetting.uploadProgress, serverSetting.isUploading]);
 
     return screen;
 };

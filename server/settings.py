@@ -7,6 +7,7 @@ class ServerSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=DOTENV_FILE, env_file_encoding='utf-8', protected_namespaces=('model_config',))
 
     model_dir: str = 'model_dir'
+    allow_unsafe_rvc_checkpoints: bool = False
     content_vec_500: str = 'pretrain/checkpoint_best_legacy_500.pt'
     content_vec_500_onnx: str = 'pretrain/content_vec_500.onnx'
     content_vec_500_onnx_on: bool = True

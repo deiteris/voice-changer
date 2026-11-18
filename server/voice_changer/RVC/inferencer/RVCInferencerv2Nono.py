@@ -6,7 +6,7 @@ from const import EnumInferenceTypes
 from voice_changer.common.deviceManager.DeviceManager import DeviceManager
 from voice_changer.RVC.inferencer.Inferencer import Inferencer
 from .rvc_models.infer_pack.models import SynthesizerTrnMs768NSFsid_nono
-from voice_changer.common.SafetensorsUtils import load_model
+from voice_changer.common.SafetensorsUtils import load_model, load_rvc_checkpoint
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class RVCInferencerv2Nono(Inferencer):
                 model = SynthesizerTrnMs768NSFsid_nono(*config, is_half=is_half).to(dev)
                 load_model(model, cpt, strict=False)
         else:
-            cpt = torch.load(file, map_location=dev if dev.type == 'cuda' else 'cpu', weights_only=False)
+            cpt = load_rvc_checkpoint(file, map_location=dev if dev.type == 'cuda' else 'cpu')
             model = SynthesizerTrnMs768NSFsid_nono(*cpt["config"], is_half=is_half).to(dev)
             model.load_state_dict(cpt["weight"], strict=False)
         model = model.eval()

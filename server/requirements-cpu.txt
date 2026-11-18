@@ -4,9 +4,14 @@
 # # bash Anaconda3-2022.10-Linux-x86_64.sh
 
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch
-torchaudio
-faiss-cpu
+# PyTorch 2.2 is the last official Intel macOS release.
+torch==2.2.2; sys_platform == 'darwin' and platform_machine == 'x86_64'
+torchaudio==2.2.2; sys_platform == 'darwin' and platform_machine == 'x86_64'
+numpy<2; sys_platform == 'darwin' and platform_machine == 'x86_64'
+faiss-cpu==1.13.2; sys_platform == 'darwin' and platform_machine == 'x86_64'
+torch; sys_platform != 'darwin' or platform_machine != 'x86_64'
+torchaudio; sys_platform != 'darwin' or platform_machine != 'x86_64'
+faiss-cpu; sys_platform != 'darwin' or platform_machine != 'x86_64'
 
 onnx
 onnxscript

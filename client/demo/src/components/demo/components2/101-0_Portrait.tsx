@@ -13,6 +13,8 @@ import {
     Filler,
   } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faWaveSquare } from "@fortawesome/free-solid-svg-icons";
 
 ChartJS.register(
     CategoryScale,
@@ -27,8 +29,12 @@ ChartJS.register(
 
 export type PortraitProps = {};
 
-// @ts-ignore
-import MyIcon from "./female-clickable.svg";
+const performanceState = (time: number, chunkTime: number) => {
+    if (time > chunkTime) return "over";
+    if (time * 1.2 > chunkTime) return "near";
+    return "within";
+};
+
 export const Portrait = (_props: PortraitProps) => {
     const { serverSetting, performance } = useAppState();
     const messageBuilderState = useMessageBuilder();
@@ -71,13 +77,7 @@ export const Portrait = (_props: PortraitProps) => {
         const chunkTime = ((serverSetting.serverSetting.serverReadChunkSize * 128 * 1000) / 48000);
         const totalLatencyTime = Math.ceil(chunkTime + performance.responseTime + serverSetting.serverSetting.crossFadeOverlapSize * 1000);
 
-        if (performance.mainprocessTime > chunkTime) {
-            elPerfRef.current.style.color = '#ff4a4a';
-        } else if (performance.mainprocessTime * 1.2 > chunkTime) {
-            elPerfRef.current.style.color = '#ffff00';
-        } else {
-            elPerfRef.current.style.color = '#00ff00';
-        }
+        elPerfRef.current.dataset.timing = performanceState(performance.mainprocessTime, chunkTime);
 
         elVolRef.current.innerHTML = volumeDb.toString();
         elChunkTimeRef.current.innerHTML = chunkTime.toFixed(1);
@@ -103,28 +103,27 @@ export const Portrait = (_props: PortraitProps) => {
 
         const chunkTime = ((serverSetting.serverSetting.serverReadChunkSize * 128 * 1000) / 48000);
 
-        if (perfTooltip > chunkTime) {
-            elPerfRef.current.style.color = '#ff4a4a';
-        } else if (perfTooltip * 1.2 > chunkTime) {
-            elPerfRef.current.style.color = '#ffff00';
-        } else {
-            elPerfRef.current.style.color = '#00ff00';
-        }
+        elPerfRef.current.dataset.timing = performanceState(perfTooltip, chunkTime);
 
         elPerfRef.current.innerHTML = perfTooltip.toString();
     }, [perfTooltip])
 
     const portrait = useMemo(() => {
         if (!selected) {
-            return <></>;
+            return (
+                <div className="studio-portrait-empty">
+                    <FontAwesomeIcon icon={faWaveSquare} />
+                    <p>Select a voice model</p>
+                </div>
+            );
         }
 
         const modelDir = serverSetting.serverSetting.voiceChangerParams.model_dir;
         const icon = selected.iconFile.length > 0 ? modelDir + "/" + selected.slotIndex + "/" + selected.iconFile.split(/[\/\\]/).pop() : "./assets/icons/human.png";
         const portrait = <img className="portrait" src={icon} alt={selected.name} />;
         const selectedTermOfUseUrlLink = selected.termsOfUseUrl ? (
-            <a href={selected.termsOfUseUrl} target="_blank" rel="noopener noreferrer" className="portrait-area-terms-of-use-link">
-                [{messageBuilderState.getMessage(__filename, "terms_of_use")}]
+            <a href={selected.termsOfUseUrl} target="_blank" rel="noopener noreferrer" className="studio-model-terms">
+                {messageBuilderState.getMessage(__filename, "terms_of_use")}
             </a>
         ) : (
             <></>
@@ -132,17 +131,11 @@ export const Portrait = (_props: PortraitProps) => {
 
         const options = {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             interaction: {
-                mode: 'nearest',
-                axis: 'x',
+                mode: 'nearest' as const,
+                axis: 'x' as const,
                 intersect: false,
-            },
-            layout: {
-                padding: {
-                    left: -10,
-                    bottom: -10,
-                }
             },
             plugins: {
                 tooltip: {
@@ -185,39 +178,31 @@ export const Portrait = (_props: PortraitProps) => {
                 {
                     data: [],
                     fill: true,
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: '#8264c8',
+                    backgroundColor: 'rgba(130, 100, 200, 0.16)',
                     pointRadius: 0,
-                    borderWidth: 1,
+                    borderWidth: 2,
                 }
             ]
         }
 
         return (
-            <div className="portrait-area">
-                <div className="portrait-container">
+            <div className="studio-portrait">
+                <div className="studio-portrait-art">
                     {portrait}
-                    <div className="portrait-area-status">
-                        <p>
-                            <span className="portrait-area-status-vctype">{serverSetting.serverSetting.useONNX ? selected.modelTypeOnnx : selected.modelType}</span>
-                        </p>
-                        <p>
-                            vol(in): <span ref={elVolRef}>-90</span> dB
-                        </p>
-                        <p>
-                            ping: <span ref={elPingRef}>0</span> ms
-                        </p>
-                        <p>
-                            total: <span ref={elTotalRef}>0</span> ms
-                        </p>
-                        <p>
-                            perf: <span ref={elPerfRef}>0</span> of <span style={{ display: 'inline-block' }}><span ref={elChunkTimeRef}>0</span> ms</span>
-                        </p>
-                        <div style={{ border: "1px solid #FFF" }}>
-                            <Chart ref={elPerfChartRef} type="line" options={options} data={data} />
-                        </div>
-                    </div>
-                    <div className="portrait-area-terms-of-use">{selectedTermOfUseUrlLink}</div>
+                </div>
+                <div className="studio-portrait-meta">
+                    <span>{serverSetting.serverSetting.useONNX ? selected.modelTypeOnnx : selected.modelType}</span>
+                    {selectedTermOfUseUrlLink}
+                </div>
+                <dl className="studio-signal">
+                    <div><dt>Input</dt><dd><span ref={elVolRef}>-90</span> dB</dd></div>
+                    <div><dt>Ping</dt><dd><span ref={elPingRef}>0</span> ms</dd></div>
+                    <div><dt>Latency</dt><dd><span ref={elTotalRef}>0</span> ms</dd></div>
+                    <div><dt>Processing</dt><dd><span ref={elPerfRef}>0</span> / <span ref={elChunkTimeRef}>0</span> ms</dd></div>
+                </dl>
+                <div className="studio-performance-chart">
+                    <Chart ref={elPerfChartRef} type="line" options={options} data={data} role="img" aria-label="Processing time history" />
                 </div>
             </div>
         );

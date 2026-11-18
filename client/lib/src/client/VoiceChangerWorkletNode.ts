@@ -116,6 +116,9 @@ export class VoiceChangerWorkletNode extends AudioWorkletNode {
           `[SIO] rconnection failed ${err}`
         );
       });
+      this.socket.on("disconnect", () => {
+        this.chunkCounter = 0;
+      });
       this.socket.on("connect", () => {
         console.log(`[SIO] connect to ${this.setting.serverUrl}`);
         console.log(`[SIO] ${this.socket?.id}`);
@@ -204,6 +207,11 @@ export class VoiceChangerWorkletNode extends AudioWorkletNode {
         this.stopPromiseResolve = null;
       }
     } else if (event.data.responseType === "inputData") {
+      // Socket.IO queues emits while disconnected; never replay stale microphone audio.
+      if (this.setting.protocol === "sio" && !this.socket?.connected) {
+        this.chunkCounter = 0;
+        return;
+      }
       const inputData = event.data.inputData as Float32Array;
       // console.log("receive input data", inputData);
 
@@ -237,15 +245,24 @@ export class VoiceChangerWorkletNode extends AudioWorkletNode {
     const timestamp = Date.now();
     const stream = this.streamSession;
     if (this.setting.protocol === "sio") {
-      if (!this.socket) {
-        console.warn(`sio is not initialized`);
+      if (!this.socket?.connected) {
+        this.chunkCounter = 0;
         return;
       }
       // console.log("emit!")
       this.socket.emit("request_message", stream ? [timestamp, newBuffer, stream.id] : [timestamp, newBuffer]);
     } else if (this.setting.protocol === "rest") {
       const restClient = stream?.client ?? new ServerRestClient(this.setting.serverUrl);
-      const data = await restClient.postVoice(timestamp, newBuffer, stream?.id);
+      let data;
+      try {
+        data = await restClient.postVoice(timestamp, newBuffer, stream?.id);
+      } catch (error) {
+        this.listener.notifyException(
+          "ERR_GENERIC_VOICE_CHANGER_EXCEPTION",
+          `Voice conversion request failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+        return;
+      }
       if (stream !== this.streamSession) return;
       const totalPing = Date.now() - Number(data.sendTimestamp) + data.ping;
       if (data.error) {
