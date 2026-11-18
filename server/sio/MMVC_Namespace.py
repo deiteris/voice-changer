@@ -41,11 +41,12 @@ class MMVC_Namespace(socketio.AsyncNamespace):
     async def on_request_message(self, sid, msg):
         recv_timestamp = round(time() * 1000)
 
-        ts, data = msg
+        ts, data, *stream = msg
+        stream_id = stream[0] if stream else None
         # Receive and send int16 instead of float32 to reduce bandwidth requirement over websocket
         input_audio = np.frombuffer(data, dtype=np.int16).astype(np.float32) / 32768
 
-        out_audio, vol, perf, err = self.voiceChangerManager.change_voice(input_audio)
+        out_audio, vol, perf, err = self.voiceChangerManager.change_voice(input_audio, stream_id, sid)
         if err is not None:
             error_code, error_message = err
             await self.emit("error", [error_code, error_message], to=sid)
@@ -53,7 +54,7 @@ class MMVC_Namespace(socketio.AsyncNamespace):
             ping = recv_timestamp - ts
             out_audio = (out_audio * 32767).astype(np.int16).tobytes()
             send_timestamp = round(time() * 1000)
-            await self.emit("response", [send_timestamp, out_audio, ping, vol, perf], to=sid)
+            await self.emit("response", [send_timestamp, out_audio, ping, vol, perf, stream_id], to=sid)
 
     def on_disconnect(self, sid):
         self.sid = None

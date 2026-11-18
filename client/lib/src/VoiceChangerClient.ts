@@ -200,8 +200,11 @@ export class VoiceChangerClient {
         this._isVoiceChanging = true;
     };
     stop = async () => {
-        await this.vcInNode.stop();
-        this._isVoiceChanging = false;
+        try {
+            await this.vcInNode.stop();
+        } finally {
+            this._isVoiceChanging = false;
+        }
     };
 
     get isVoiceChanging(): boolean {

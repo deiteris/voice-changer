@@ -30,6 +30,7 @@ class ServerAudioCallbacks(Protocol):
 class ServerAudio:
     def __init__(self, callbacks: ServerAudioCallbacks, settings: VoiceChangerSettings):
         self.settings = settings
+        self.stream_id = object()
         self.callbacks = callbacks
         self.mon_wav = None
         self.serverAudioInputDevices = None
@@ -157,6 +158,7 @@ class ServerAudio:
     ###########################################
     def start(self):
         self.stop()
+        self.stream_id = object()
 
         sd._terminate()
         sd._initialize()

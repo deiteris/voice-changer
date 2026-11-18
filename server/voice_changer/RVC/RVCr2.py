@@ -40,6 +40,7 @@ class RVCr2(VoiceChangerModel):
 
         self.pipeline: Pipeline | None = None
 
+        self.audio_buffer: torch.Tensor | None = None
         self.convert_buffer: torch.Tensor | None = None
         self.pitch_buffer: torch.Tensor | None = None
         self.pitchf_buffer: torch.Tensor | None = None
@@ -215,6 +216,11 @@ class RVCr2(VoiceChangerModel):
         audio_out: torch.Tensor = self.resampler_out((audio_model * torch.sqrt(vol_t)).float())
 
         return audio_out
+
+    def reset_stream(self):
+        for buffer in (self.audio_buffer, self.convert_buffer, self.pitch_buffer, self.pitchf_buffer):
+            if buffer is not None:
+                buffer.zero_()
 
     def inference(self, audio_in: AudioInOutFloat):
         if self.pipeline is None:

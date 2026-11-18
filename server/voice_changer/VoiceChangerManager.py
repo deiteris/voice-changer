@@ -20,6 +20,7 @@ from Exceptions import (
     PipelineNotInitializedException,
     VoiceChangerIsNotSelectedException,
 )
+from time import monotonic
 from traceback import format_exc
 from typing import Callable, Any
 
@@ -29,6 +30,9 @@ from voice_changer.RVC.RVCModelSlotGenerator import RVCModelSlotGenerator  # 起
 logger = logging.getLogger(__name__)
 
 
+BROWSER_STREAM_IDLE_SECONDS = 10
+
+
 class VoiceChangerManager(ServerAudioCallbacks):
     _instance = None
 
@@ -36,7 +40,7 @@ class VoiceChangerManager(ServerAudioCallbacks):
     # ServerDeviceCallbacks
     ############################
     def on_audio(self, unpackedData: AudioInOutFloat):
-        return self.change_voice(unpackedData)
+        return self.change_voice(unpackedData, local_source=self.server_audio.stream_id)
 
     def emit_to(self, volume: float, performance: list[float], err):
         self.emitToFunc(volume, performance, err)
@@ -47,6 +51,9 @@ class VoiceChangerManager(ServerAudioCallbacks):
     def __init__(self):
         logger.info("Initializing...")
         self.params = get_settings()
+        self._browser_stream: str | None = None
+        self._last_browser_audio = 0.0
+        self._audio_source = None
 
         self.modelSlotManager = ModelSlotManager.get_instance(self.params.model_dir)
         # スタティックな情報を収集
@@ -205,15 +212,60 @@ class VoiceChangerManager(ServerAudioCallbacks):
 
         return self.get_info()
 
-    def change_voice(self, receivedData: AudioInOutFloat) -> tuple[AudioInOutFloat, tuple, tuple | None]:
-        if self.settings.passThrough:  # パススルー
-            vol = float(np.sqrt(
-                np.square(receivedData).mean(dtype=np.float32)
-            ))
-            return receivedData, vol, [0, 0, 0], None
+    def set_browser_stream(self, stream_id: str, active: bool) -> bool:
+        with self.device_manager.lock:
+            if not active:
+                if self._browser_stream == stream_id:
+                    self._browser_stream = None
+                    self._audio_source = None
+                return True
 
+            now = monotonic()
+            busy = self._browser_stream is not None and now - self._last_browser_audio < BROWSER_STREAM_IDLE_SECONDS
+            if self.settings.enableServerAudio or self.server_audio.running or (busy and self._browser_stream != stream_id):
+                return False
+            self._browser_stream = stream_id
+            self._last_browser_audio = now
+            self._audio_source = None
+            return True
+
+    def change_voice(
+        self,
+        receivedData: AudioInOutFloat,
+        stream_id: str | None = None,
+        legacy_socket: str | None = None,
+        *,
+        local_source: object | None = None,
+    ):
         try:
             with self.device_manager.lock:
+                if local_source is not None:
+                    source = local_source
+                else:
+                    now = monotonic()
+                    if self.settings.enableServerAudio or self.server_audio.running:
+                        return np.zeros(1, dtype=np.float32), 0, [0, 0, 0], (
+                            'STREAM_INACTIVE', 'Server audio owns voice conversion.')
+                    if stream_id is not None:
+                        if stream_id != self._browser_stream:
+                            return np.zeros(1, dtype=np.float32), 0, [0, 0, 0], (
+                                'STREAM_INACTIVE', 'This stream no longer owns voice conversion. Stop and start again.')
+                        self._last_browser_audio = now
+                        source = stream_id
+                    else:
+                        if self._browser_stream is not None and now - self._last_browser_audio < BROWSER_STREAM_IDLE_SECONDS:
+                            return np.zeros(1, dtype=np.float32), 0, [0, 0, 0], (
+                                'STREAM_INACTIVE', 'Another browser is using voice conversion.')
+                        self._browser_stream = None
+                        # Legacy REST packets have no stream identity. Give each packet fresh history.
+                        source = ('socket', legacy_socket) if legacy_socket is not None else object()
+
+                if self._audio_source != source:
+                    self.vc.reset_stream()
+                    self._audio_source = source
+                if self.settings.passThrough:
+                    vol = float(np.sqrt(np.square(receivedData).mean(dtype=np.float32)))
+                    return receivedData, vol, [0, 0, 0], None
                 audio, vol, perf = self.vc.on_request(receivedData)
             return audio, vol, perf, None
         except VoiceChangerIsNotSelectedException as e:

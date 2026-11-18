@@ -133,6 +133,12 @@ class VoiceChangerV2:
             return 0
         return self.vcmodel.get_processing_sampling_rate()
 
+    def reset_stream(self):
+        if self.sola_buffer is not None:
+            self.sola_buffer.zero_()
+        if self.vcmodel is not None:
+            self.vcmodel.reset_stream()
+
     def process_audio(self, audio_in: AudioInOutFloat) -> tuple[AudioInOutFloat, float]:
         block_size = audio_in.shape[0]
 

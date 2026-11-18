@@ -24,6 +24,9 @@ export class VoiceChangerWorkletNode extends AudioWorkletNode {
   private listener: VoiceChangerWorkletListener;
 
   private setting: WorkletNodeSetting = DefaultClientSettng.workletNodeSetting;
+  private streamSession?: { id: string; client: ServerRestClient };
+  private streamOperation = Promise.resolve();
+  private reservingStream = false;
   private requestChunks: Int16Array = new Int16Array(this.setting.inputChunkNum * 128);
   private chunkCounter: number = 0;
   private socket: Socket<DefaultEventsMap, DefaultEventsMap> | null = null;
@@ -44,7 +47,11 @@ export class VoiceChangerWorkletNode extends AudioWorkletNode {
 
   constructor(context: AudioContext, listener: VoiceChangerWorkletListener) {
     super(context, "voice-changer-worklet-processor");
-    this.port.onmessage = this.handleMessage.bind(this);
+    this.port.onmessage = (event) => {
+      if (event.data.responseType !== "inputData" || this.streamSession) {
+        this.handleMessage(event);
+      }
+    };
     this.listener = listener;
     console.log(`[worklet_node][voice-changer-worklet-processor] created.`);
   }
@@ -55,6 +62,10 @@ export class VoiceChangerWorkletNode extends AudioWorkletNode {
 
   // 設定
   updateSetting = (setting: WorkletNodeSetting) => {
+    if ((this.streamSession || this.reservingStream) && setting.serverUrl !== this.setting.serverUrl) {
+      throw new Error("Stop voice conversion before changing servers.");
+    }
+
     console.log(
       `[WorkletNode] Updating WorkletNode Setting,`,
       this.setting,
@@ -119,7 +130,7 @@ export class VoiceChangerWorkletNode extends AudioWorkletNode {
 
       this.socket.on("error", (response: any) => {
         const [error_code, error_message] = response;
-        if (error_code == 'ERR_SAMPLE_RATE_NOT_SUPPORTED') {
+        if (error_code === 'ERR_SAMPLE_RATE_NOT_SUPPORTED' || error_code === 'STREAM_INACTIVE') {
           this.listener.notifyException(error_code, error_message)
         } else {
           this.listener.notifyException(
@@ -137,7 +148,8 @@ export class VoiceChangerWorkletNode extends AudioWorkletNode {
       });
 
       this.socket.on("response", (response: any[]) => {
-        const [sendTimestamp, audio, ping, vol, perf] = response
+        const [sendTimestamp, audio, ping, vol, perf, streamId] = response
+        if ((streamId ?? undefined) !== this.streamSession?.id) return;
         // NOTE: Large integers are packed as BigInt
         const totalPing = Date.now() - Number(sendTimestamp) + ping;
 
@@ -223,20 +235,22 @@ export class VoiceChangerWorkletNode extends AudioWorkletNode {
 
   private sendBuffer = async (newBuffer: ArrayBuffer) => {
     const timestamp = Date.now();
+    const stream = this.streamSession;
     if (this.setting.protocol === "sio") {
       if (!this.socket) {
         console.warn(`sio is not initialized`);
         return;
       }
       // console.log("emit!")
-      this.socket.emit("request_message", [timestamp, newBuffer]);
+      this.socket.emit("request_message", stream ? [timestamp, newBuffer, stream.id] : [timestamp, newBuffer]);
     } else if (this.setting.protocol === "rest") {
-      const restClient = new ServerRestClient(this.setting.serverUrl);
-      const data = await restClient.postVoice(timestamp, newBuffer);
+      const restClient = stream?.client ?? new ServerRestClient(this.setting.serverUrl);
+      const data = await restClient.postVoice(timestamp, newBuffer, stream?.id);
+      if (stream !== this.streamSession) return;
       const totalPing = Date.now() - Number(data.sendTimestamp) + data.ping;
       if (data.error) {
         const { code, message } = data.details
-        if (code == 'ERR_SAMPLE_RATE_NOT_SUPPORTED') {
+        if (code === 'ERR_SAMPLE_RATE_NOT_SUPPORTED' || code === 'STREAM_INACTIVE') {
           this.listener.notifyException(code, message)
         } else {
           this.listener.notifyException(
@@ -275,31 +289,72 @@ export class VoiceChangerWorkletNode extends AudioWorkletNode {
     this.port.postMessage(req);
   };
 
-  start = async () => {
+  private queueStreamOperation = (operation: () => Promise<void>) => {
+    const result = this.streamOperation.then(operation);
+    this.streamOperation = result.catch(() => {});
+    return result;
+  };
+
+  private sendWorkletCommand = (requestType: "start" | "stop") => new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error(`Audio processor did not acknowledge ${requestType}.`)), 5000);
+    const acknowledge = () => {
+      clearTimeout(timeout);
+      resolve();
+    };
+    if (requestType === "start") {
+      this.startPromiseResolve = acknowledge;
+    } else {
+      this.stopPromiseResolve = acknowledge;
+    }
+    try {
+      this.port.postMessage({ requestType, voice: new Float32Array(1) });
+    } catch (error) {
+      clearTimeout(timeout);
+      reject(error);
+    }
+  });
+
+  start = () => this.queueStreamOperation(async () => {
+    if (this.streamSession) return;
+    const stream = { id: crypto.randomUUID(), client: new ServerRestClient(this.setting.serverUrl) };
+    this.reservingStream = true;
+    try {
+      await stream.client.setStream(stream.id, true);
+    } finally {
+      this.reservingStream = false;
+    }
+    this.streamSession = stream;
     this.requestChunks = new Int16Array(this.setting.inputChunkNum * 128);
     this.chunkCounter = 0;
+    try {
+      (this.outputNode ?? this).trancateBuffer();
+      await this.sendWorkletCommand("start");
+    } catch (error) {
+      this.startPromiseResolve = null;
+      this.streamSession = undefined;
+      try {
+        this.port.postMessage({ requestType: "stop", voice: new Float32Array(1) });
+      } catch { /* The processor may already be closed. */ }
+      await stream.client.setStream(stream.id, false).catch(() => {});
+      throw error;
+    }
+  });
 
-    const p = new Promise<void>((resolve) => {
-      this.startPromiseResolve = resolve;
-    });
-    const req: VoiceChangerWorkletProcessorRequest = {
-      requestType: "start",
-      voice: new Float32Array(1),
-    };
-    this.port.postMessage(req);
-    await p;
-  };
-  stop = async () => {
-    const p = new Promise<void>((resolve) => {
-      this.stopPromiseResolve = resolve;
-    });
-    const req: VoiceChangerWorkletProcessorRequest = {
-      requestType: "stop",
-      voice: new Float32Array(1),
-    };
-    this.port.postMessage(req);
-    await p;
-  };
+  stop = () => this.queueStreamOperation(async () => {
+    const stream = this.streamSession;
+    if (!stream) return;
+    try {
+      await this.sendWorkletCommand("stop");
+    } finally {
+      this.stopPromiseResolve = null;
+      this.streamSession = undefined;
+      try {
+        (this.outputNode ?? this).trancateBuffer();
+      } finally {
+        await stream.client.setStream(stream.id, false);
+      }
+    }
+  });
   trancateBuffer = () => {
     const req: VoiceChangerWorkletProcessorRequest = {
       requestType: "trancateBuffer",

@@ -247,10 +247,21 @@ export class ServerRestClient {
 
     // VoiceChangerWorkletNodeから呼び出される
     //// Restで音声変換
-    postVoice = async (timestamp: number, buffer: ArrayBuffer) => {
+    setStream = async (streamId: string, active: boolean) => {
+        const body = new FormData();
+        body.append("stream_id", streamId);
+        body.append("active", String(active));
+        const response = await fetch(this.serverUrl + "/stream", { method: "POST", body, signal: AbortSignal.timeout(5000) });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || "Could not update the voice stream.");
+        }
+    };
+
+    postVoice = async (timestamp: number, buffer: ArrayBuffer, streamId?: string) => {
         const url = this.serverUrl + "/test";
 
-        const body = pack([timestamp, buffer])
+        const body = pack(streamId ? [timestamp, buffer, streamId] : [timestamp, buffer])
         const res = await fetch(url, {
             method: "POST",
             headers: {

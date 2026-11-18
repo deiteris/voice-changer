@@ -32,8 +32,9 @@ export const CharacterArea = (_props: CharacterAreaProps) => {
         if (!startWithAudioContextCreate) {
             return;
         }
-        guiState.setIsConverting(true);
-        start();
+        start()
+            .then(() => guiState.setIsConverting(true))
+            .catch((error) => toast.error(error instanceof Error ? error.message : String(error)));
     }, [startWithAudioContextCreate]);
 
     const nameArea = useMemo(() => {
@@ -98,8 +99,12 @@ export const CharacterArea = (_props: CharacterAreaProps) => {
                     }
                     setStartWithAudioContextCreate(true);
                 } else {
-                    guiState.setIsConverting(true);
-                    await start();
+                    try {
+                        await start();
+                        guiState.setIsConverting(true);
+                    } catch (error) {
+                        toast.error(error instanceof Error ? error.message : String(error));
+                    }
                 }
             } else {
                 if (serverSetting.serverSetting.serverInputDeviceId == -1) {
@@ -115,8 +120,13 @@ export const CharacterArea = (_props: CharacterAreaProps) => {
         };
         const onStopClicked = async () => {
             if (serverSetting.serverSetting.enableServerAudio == 0) {
-                guiState.setIsConverting(false);
-                await stop();
+                try {
+                    await stop();
+                } catch (error) {
+                    toast.error(error instanceof Error ? error.message : String(error));
+                } finally {
+                    guiState.setIsConverting(false);
+                }
             } else {
                 await setServerAudioRunning(false);
             }

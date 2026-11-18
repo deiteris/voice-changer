@@ -52,10 +52,6 @@ class VoiceChangerWorkletProcessor extends AudioWorkletProcessor {
             console.log("[worklet] worklet configured", request);
             return;
         } else if (request.requestType === "start") {
-            if (this.isRecording) {
-                console.warn("[worklet] recoring is already started");
-                return;
-            }
             this.isRecording = true;
             const startResponse: VoiceChangerWorkletProcessorResponse = {
                 responseType: "start_ok",
@@ -63,10 +59,6 @@ class VoiceChangerWorkletProcessor extends AudioWorkletProcessor {
             this.port.postMessage(startResponse);
             return;
         } else if (request.requestType === "stop") {
-            if (!this.isRecording) {
-                console.warn("[worklet] recoring is not started");
-                return;
-            }
             this.isRecording = false;
             const stopResponse: VoiceChangerWorkletProcessorResponse = {
                 responseType: "stop_ok",
