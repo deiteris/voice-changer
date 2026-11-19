@@ -3,6 +3,59 @@
     <head>
         <meta charset="utf-8" />
         <title>Realtime Voice Changer Client</title>
+        <script>
+            (() => {
+                const token = new URLSearchParams(window.location.hash.slice(1)).get("desktop");
+                if (!token) return;
+
+                const endpoint = "/_desktop_session";
+                const eventsUrl = endpoint + "?" + new URLSearchParams({ token });
+                let connection;
+                let closed = false;
+
+                const closeTab = () => {
+                    if (closed) return;
+                    closed = true;
+                    connection.close();
+                    window.close();
+                    if (window.closed) return;
+
+                    // Replacing the document also releases browser audio when the tab cannot be closed by a script.
+                    const stoppedPage = new Blob([
+                        '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">',
+                        '<title>Voice Changer has quit</title>',
+                        '<style>:root{color-scheme:light dark}body{margin:clamp(2rem,8vw,6rem);font:1rem/1.55 "Poppins","Segoe UI",sans-serif}h1{font-size:1.75rem;line-height:1.2}</style>',
+                        '<main><h1>Voice Changer has quit</h1><p>To use it again, open the Windows launcher.</p></main></html>',
+                    ], { type: "text/html" });
+                    window.location.replace(URL.createObjectURL(stoppedPage));
+                };
+
+                const connect = () => {
+                    connection = new EventSource(eventsUrl);
+                    connection.addEventListener("quit", closeTab);
+                    connection.addEventListener("error", () => {
+                        if (connection.readyState === EventSource.CLOSED) closeTab();
+                    });
+                };
+                connect();
+                window.addEventListener("pagehide", () => connection.close());
+                window.addEventListener("pageshow", (event) => {
+                    if (event.persisted && !closed) connect();
+                });
+
+                window.voiceChangerDesktop = {
+                    async quit() {
+                        const response = await fetch(endpoint, {
+                            method: "POST",
+                            headers: { "x-voice-changer-session": token },
+                            signal: AbortSignal.timeout(5000),
+                        });
+                        if (response.status !== 204) throw new Error("Quit request failed");
+                        closeTab();
+                    },
+                };
+            })();
+        </script>
     </head>
     <body>
         <div id="app"></div>

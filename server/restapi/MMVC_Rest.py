@@ -1,3 +1,5 @@
+import asyncio
+from contextlib import asynccontextmanager
 import logging
 
 from restapi.mods.trustedorigin import TrustedOriginMiddleware
@@ -22,7 +24,15 @@ class MMVC_Rest:
         if cls._instance is None:
             logger.info("Initializing...")
             settings = get_settings()
-            app_fastapi = FastAPI()
+
+            @asynccontextmanager
+            async def lifespan(app):
+                try:
+                    yield
+                finally:
+                    await asyncio.to_thread(voiceChangerManager.shutdown)
+
+            app_fastapi = FastAPI(lifespan=lifespan)
             app_fastapi.add_middleware(
                 TrustedOriginMiddleware,
                 allowed_origins=settings.allowed_origins,

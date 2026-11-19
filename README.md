@@ -166,6 +166,8 @@ The following examples demonstrate the unpacking process:
 
 When running the voice changer for the first time, it will start downloading necessary files. Do not close the window until the download finishes.
 
+Select **Quit** in the header to stop Voice Changer and Server Audio. Closing the last browser tab opened by the Windows launcher also quits after a short pause for reloads. You can also press **Ctrl+C** in the console. Use `--launch-browser false` to run the server independently of a browser.
+
 Once the download is finished, the voice changer will open the user interface using your default web browser.
 
 ### Running locally on macOS

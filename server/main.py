@@ -10,15 +10,14 @@ import sys
 import uvicorn
 import asyncio
 
-import threading
 import socket
-import time
 import logging
 from utils.strtobool import strtobool
 from datetime import datetime
 import argparse
 from downloader.WeightDownloader import downloadWeight
 from downloader.SampleDownloader import downloadInitialSamples
+from mods.desktop_session import DesktopSession
 from mods.ssl import create_self_signed_cert
 from webbrowser import open_new_tab
 from settings import get_settings
@@ -50,37 +49,49 @@ def check_port(port) -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", port))
 
-def wait_for_server(proto: str, launch_browser: bool):
-    while True:
-        time.sleep(1)
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            result = sock.connect_ex(('127.0.0.1', settings.port))
-        if result == 0:
-            break
+async def open_when_ready(server: uvicorn.Server, url: str, launch_browser: bool, desktop: DesktopSession | None):
+    while not server.started and not server.should_exit:
+        await asyncio.sleep(0.25)
+    if server.should_exit:
+        return
+
     logger.info('-' * 8)
-    logger.info(f"The server is listening on {proto}://{settings.host}:{settings.port}/")
+    logger.info("The server is listening on %s", url)
     logger.info('-' * 8)
-    if launch_browser:
-        open_new_tab(f'{proto}://127.0.0.1:{settings.port}')
+    if desktop is not None:
+        await desktop.watch(server, url)
+    elif launch_browser:
+        await asyncio.to_thread(open_new_tab, url)
 
 async def runServer(host: str, port: int, launch_browser: bool = False, log_level: str = 'error', key_path: str | None = None, cert_path: str | None = None):
     check_port(port)
 
+    from app import fastapi, socketio
+
+    desktop = None
+    if launch_browser and sys.platform == "win32":
+        desktop = DesktopSession()
+        fastapi.add_route("/_desktop_session", desktop, methods=["GET", "POST"], include_in_schema=False)
+
     config = uvicorn.Config(
-        "app:socketio",
+        socketio,
         host=host,
         port=port,
         reload=False,
         ssl_keyfile=key_path,
         ssl_certfile=cert_path,
-        log_level=log_level
+        log_level=log_level,
+        timeout_graceful_shutdown=5 if desktop is not None else None,
     )
     server = uvicorn.Server(config)
 
     proto = 'https' if key_path and cert_path else 'http'
-    threading.Thread(target=wait_for_server, daemon=True, args=(proto, launch_browser)).start()
-
-    await server.serve()
+    browser_task = asyncio.create_task(open_when_ready(server, f"{proto}://127.0.0.1:{port}/", launch_browser, desktop))
+    try:
+        await server.serve()
+    finally:
+        browser_task.cancel()
+        await asyncio.gather(browser_task, return_exceptions=True)
 
 async def main(args):
     logger.debug(args)

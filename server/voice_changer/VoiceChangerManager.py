@@ -86,6 +86,14 @@ class VoiceChangerManager(ServerAudioCallbacks):
         # Initialize the voice changer
         self.initialize(self.settings.modelSlotIndex)
 
+    def shutdown(self):
+        try:
+            with self._settings_lock:
+                self.server_audio.stop()
+        finally:
+            self._inference_executor.shutdown(wait=True, cancel_futures=True)
+            self.vc.io_recorder.close()
+
     def store_setting(self):
         temp_path = None
         try:
